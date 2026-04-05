@@ -1,6 +1,6 @@
 using System.Security.Claims;
 
-namespace net_worth_app.Services;
+namespace NetWorth.Services;
 
 public class CurrentUserAccessor(IHttpContextAccessor httpContextAccessor)
 {
@@ -27,3 +27,4 @@ public class CurrentUserAccessor(IHttpContextAccessor httpContextAccessor)
         throw new InvalidOperationException("User identifier claim not found. Expected 'oid' or 'sub'.");
     }
 }
+

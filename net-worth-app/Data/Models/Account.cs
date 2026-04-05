@@ -1,12 +1,12 @@
 using Microsoft.EntityFrameworkCore;
 using System.ComponentModel.DataAnnotations;
 
-namespace net_worth_app.Data.Models;
+namespace NetWorth.Data.Models;
 
 [Index(nameof(UserId), nameof(Name), IsUnique = true)]
 public class Account
 {
-    public Guid Id { get; set; }
+    public Guid AccountId { get; set; }
 
     [Required]
     [MaxLength(200)]
@@ -30,3 +30,4 @@ public class Account
 
     public ICollection<Instrument> Instruments { get; set; } = new List<Instrument>();
 }
+

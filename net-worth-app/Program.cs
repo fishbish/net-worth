@@ -5,11 +5,11 @@ using Microsoft.AspNetCore.Mvc.Authorization;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Identity.Web;
 using Microsoft.Identity.Web.UI;
-using net_worth_app.Components;
-using net_worth_app.Data;
-using net_worth_app.Services;
+using NetWorth.Components;
+using NetWorth.Data;
+using NetWorth.Services;
 
-namespace net_worth_app
+namespace NetWorth
 {
     public class Program
     {
@@ -65,3 +65,4 @@ namespace net_worth_app
         }
     }
 }
+

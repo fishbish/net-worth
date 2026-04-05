@@ -1,4 +1,4 @@
-namespace net_worth_app.Data.Models;
+namespace NetWorth.Data.Models;
 
 public enum InstrumentType
 {
@@ -9,3 +9,4 @@ public enum InstrumentType
     Cash = 5,
     Other = 6
 }
+

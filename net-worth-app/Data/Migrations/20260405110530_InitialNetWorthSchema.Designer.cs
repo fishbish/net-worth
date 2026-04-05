@@ -5,14 +5,14 @@ using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata;
 using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
-using net_worth_app.Data;
+using NetWorth.Data;
 
 #nullable disable
 
-namespace net_worth_app.Data.Migrations
+namespace NetWorth.Data.Migrations
 {
     [DbContext(typeof(NetWorthDbContext))]
-    [Migration("20260405091127_InitialNetWorthSchema")]
+    [Migration("20260405110530_InitialNetWorthSchema")]
     partial class InitialNetWorthSchema
     {
         /// <inheritdoc />
@@ -25,37 +25,28 @@ namespace net_worth_app.Data.Migrations
 
             SqlServerModelBuilderExtensions.UseIdentityColumns(modelBuilder);
 
-            modelBuilder.Entity("net_worth_app.Data.Models.Account", b =>
+            modelBuilder.Entity("NetWorth.Data.Models.Account", b =>
                 {
                     b.Property<Guid>("Id")
                         .ValueGeneratedOnAdd()
                         .HasColumnType("uniqueidentifier");
 
-                    b.Property<string>("Category")
-                        .IsRequired()
-                        .HasMaxLength(32)
-                        .HasColumnType("nvarchar(32)");
+                    b.Property<int>("Category")
+                        .HasColumnType("int");
 
                     b.Property<DateTime>("CreatedUtc")
                         .HasColumnType("datetime2");
 
-                    b.Property<string>("Institution")
-                        .HasMaxLength(200)
-                        .HasColumnType("nvarchar(200)");
+                    b.Property<Guid>("InstitutionId")
+                        .HasColumnType("uniqueidentifier");
 
                     b.Property<string>("Name")
                         .IsRequired()
                         .HasMaxLength(200)
                         .HasColumnType("nvarchar(200)");
 
-                    b.Property<string>("Notes")
-                        .HasMaxLength(2000)
-                        .HasColumnType("nvarchar(2000)");
-
-                    b.Property<string>("Type")
-                        .IsRequired()
-                        .HasMaxLength(32)
-                        .HasColumnType("nvarchar(32)");
+                    b.Property<int>("Type")
+                        .HasColumnType("int");
 
                     b.Property<string>("UserId")
                         .IsRequired()
@@ -64,12 +55,15 @@ namespace net_worth_app.Data.Migrations
 
                     b.HasKey("Id");
 
-                    b.HasIndex("UserId", "Name");
+                    b.HasIndex("InstitutionId");
 
-                    b.ToTable("Accounts", (string)null);
+                    b.HasIndex("UserId", "Name")
+                        .IsUnique();
+
+                    b.ToTable("Accounts");
                 });
 
-            modelBuilder.Entity("net_worth_app.Data.Models.AccountSnapshot", b =>
+            modelBuilder.Entity("NetWorth.Data.Models.AccountSnapshot", b =>
                 {
                     b.Property<Guid>("Id")
                         .ValueGeneratedOnAdd()
@@ -92,10 +86,29 @@ namespace net_worth_app.Data.Migrations
                     b.HasIndex("AccountId", "SnapshotDate")
                         .IsUnique();
 
-                    b.ToTable("AccountSnapshots", (string)null);
+                    b.ToTable("AccountSnapshots");
                 });
 
-            modelBuilder.Entity("net_worth_app.Data.Models.Instrument", b =>
+            modelBuilder.Entity("NetWorth.Data.Models.Institution", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<string>("Name")
+                        .IsRequired()
+                        .HasMaxLength(200)
+                        .HasColumnType("nvarchar(200)");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("Name")
+                        .IsUnique();
+
+                    b.ToTable("Institutions");
+                });
+
+            modelBuilder.Entity("NetWorth.Data.Models.Instrument", b =>
                 {
                     b.Property<Guid>("Id")
                         .ValueGeneratedOnAdd()
@@ -112,27 +125,22 @@ namespace net_worth_app.Data.Migrations
                         .HasMaxLength(200)
                         .HasColumnType("nvarchar(200)");
 
-                    b.Property<string>("Notes")
-                        .HasMaxLength(2000)
-                        .HasColumnType("nvarchar(2000)");
-
                     b.Property<string>("Ticker")
                         .HasMaxLength(40)
                         .HasColumnType("nvarchar(40)");
 
-                    b.Property<string>("Type")
-                        .IsRequired()
-                        .HasMaxLength(32)
-                        .HasColumnType("nvarchar(32)");
+                    b.Property<int>("Type")
+                        .HasColumnType("int");
 
                     b.HasKey("Id");
 
-                    b.HasIndex("AccountId", "Name");
+                    b.HasIndex("AccountId", "Name")
+                        .IsUnique();
 
-                    b.ToTable("Instruments", (string)null);
+                    b.ToTable("Instruments");
                 });
 
-            modelBuilder.Entity("net_worth_app.Data.Models.InstrumentBalanceSnapshot", b =>
+            modelBuilder.Entity("NetWorth.Data.Models.InstrumentSnapshot", b =>
                 {
                     b.Property<Guid>("Id")
                         .ValueGeneratedOnAdd()
@@ -157,12 +165,23 @@ namespace net_worth_app.Data.Migrations
                     b.HasIndex("AccountSnapshotId", "InstrumentId")
                         .IsUnique();
 
-                    b.ToTable("InstrumentBalanceSnapshots", (string)null);
+                    b.ToTable("InstrumentSnapshots");
                 });
 
-            modelBuilder.Entity("net_worth_app.Data.Models.AccountSnapshot", b =>
+            modelBuilder.Entity("NetWorth.Data.Models.Account", b =>
                 {
-                    b.HasOne("net_worth_app.Data.Models.Account", "Account")
+                    b.HasOne("NetWorth.Data.Models.Institution", "Institution")
+                        .WithMany()
+                        .HasForeignKey("InstitutionId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Institution");
+                });
+
+            modelBuilder.Entity("NetWorth.Data.Models.AccountSnapshot", b =>
+                {
+                    b.HasOne("NetWorth.Data.Models.Account", "Account")
                         .WithMany("Snapshots")
                         .HasForeignKey("AccountId")
                         .OnDelete(DeleteBehavior.Cascade)
@@ -171,9 +190,9 @@ namespace net_worth_app.Data.Migrations
                     b.Navigation("Account");
                 });
 
-            modelBuilder.Entity("net_worth_app.Data.Models.Instrument", b =>
+            modelBuilder.Entity("NetWorth.Data.Models.Instrument", b =>
                 {
-                    b.HasOne("net_worth_app.Data.Models.Account", "Account")
+                    b.HasOne("NetWorth.Data.Models.Account", "Account")
                         .WithMany("Instruments")
                         .HasForeignKey("AccountId")
                         .OnDelete(DeleteBehavior.Cascade)
@@ -182,18 +201,18 @@ namespace net_worth_app.Data.Migrations
                     b.Navigation("Account");
                 });
 
-            modelBuilder.Entity("net_worth_app.Data.Models.InstrumentBalanceSnapshot", b =>
+            modelBuilder.Entity("NetWorth.Data.Models.InstrumentSnapshot", b =>
                 {
-                    b.HasOne("net_worth_app.Data.Models.AccountSnapshot", "AccountSnapshot")
-                        .WithMany("InstrumentBalances")
+                    b.HasOne("NetWorth.Data.Models.AccountSnapshot", "AccountSnapshot")
+                        .WithMany("InstrumentSnapshots")
                         .HasForeignKey("AccountSnapshotId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
 
-                    b.HasOne("net_worth_app.Data.Models.Instrument", "Instrument")
-                        .WithMany("BalanceSnapshots")
+                    b.HasOne("NetWorth.Data.Models.Instrument", "Instrument")
+                        .WithMany("Snapshots")
                         .HasForeignKey("InstrumentId")
-                        .OnDelete(DeleteBehavior.Restrict)
+                        .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
 
                     b.Navigation("AccountSnapshot");
@@ -201,21 +220,21 @@ namespace net_worth_app.Data.Migrations
                     b.Navigation("Instrument");
                 });
 
-            modelBuilder.Entity("net_worth_app.Data.Models.Account", b =>
+            modelBuilder.Entity("NetWorth.Data.Models.Account", b =>
                 {
                     b.Navigation("Instruments");
 
                     b.Navigation("Snapshots");
                 });
 
-            modelBuilder.Entity("net_worth_app.Data.Models.AccountSnapshot", b =>
+            modelBuilder.Entity("NetWorth.Data.Models.AccountSnapshot", b =>
                 {
-                    b.Navigation("InstrumentBalances");
+                    b.Navigation("InstrumentSnapshots");
                 });
 
-            modelBuilder.Entity("net_worth_app.Data.Models.Instrument", b =>
+            modelBuilder.Entity("NetWorth.Data.Models.Instrument", b =>
                 {
-                    b.Navigation("BalanceSnapshots");
+                    b.Navigation("Snapshots");
                 });
 #pragma warning restore 612, 618
         }

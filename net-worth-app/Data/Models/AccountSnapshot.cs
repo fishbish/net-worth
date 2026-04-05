@@ -1,12 +1,12 @@
 using Microsoft.EntityFrameworkCore;
 using System.ComponentModel.DataAnnotations.Schema;
 
-namespace net_worth_app.Data.Models;
+namespace NetWorth.Data.Models;
 
 [Index(nameof(AccountId), nameof(SnapshotDate), IsUnique = true)]
 public class AccountSnapshot
 {
-    public Guid Id { get; set; }
+    public Guid AccountSnapshotId { get; set; }
 
     public Guid AccountId { get; set; }
 
@@ -19,5 +19,6 @@ public class AccountSnapshot
 
     public DateTime CreatedUtc { get; set; }
 
-    public ICollection<InstrumentBalanceSnapshot> InstrumentBalances { get; set; } = new List<InstrumentBalanceSnapshot>();
+    public ICollection<InstrumentSnapshot> InstrumentSnapshots { get; set; } = new List<InstrumentSnapshot>();
 }
+

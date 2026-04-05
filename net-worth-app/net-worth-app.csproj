@@ -4,8 +4,8 @@
     <TargetFramework>net10.0</TargetFramework>
     <Nullable>enable</Nullable>
     <ImplicitUsings>enable</ImplicitUsings>
-    <UserSecretsId>aspnet-net_worth_app-23cff063-1bb8-4b20-b220-5abfa22770ae</UserSecretsId>
-    <RootNamespace>net_worth_app</RootNamespace>
+    <UserSecretsId>aspnet-NetWorth-23cff063-1bb8-4b20-b220-5abfa22770ae</UserSecretsId>
+    <RootNamespace>NetWorth</RootNamespace>
   </PropertyGroup>
 
   <ItemGroup>
@@ -22,3 +22,4 @@
   </ItemGroup>
 
 </Project>
+

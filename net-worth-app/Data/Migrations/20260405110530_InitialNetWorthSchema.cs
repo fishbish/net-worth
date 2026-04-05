@@ -3,7 +3,7 @@ using Microsoft.EntityFrameworkCore.Migrations;
 
 #nullable disable
 
-namespace net_worth_app.Data.Migrations
+namespace NetWorth.Data.Migrations
 {
     /// <inheritdoc />
     public partial class InitialNetWorthSchema : Migration
@@ -30,10 +30,9 @@ namespace net_worth_app.Data.Migrations
                     Id = table.Column<Guid>(type: "uniqueidentifier", nullable: false),
                     UserId = table.Column<string>(type: "nvarchar(200)", maxLength: 200, nullable: false),
                     Name = table.Column<string>(type: "nvarchar(200)", maxLength: 200, nullable: false),
-                    Category = table.Column<string>(type: "nvarchar(32)", maxLength: 32, nullable: false),
-                    Type = table.Column<string>(type: "nvarchar(32)", maxLength: 32, nullable: false),
+                    Category = table.Column<int>(type: "int", nullable: false),
+                    Type = table.Column<int>(type: "int", nullable: false),
                     InstitutionId = table.Column<Guid>(type: "uniqueidentifier", nullable: false),
-                    Notes = table.Column<string>(type: "nvarchar(2000)", maxLength: 2000, nullable: true),
                     CreatedUtc = table.Column<DateTime>(type: "datetime2", nullable: false)
                 },
                 constraints: table =>
@@ -76,8 +75,7 @@ namespace net_worth_app.Data.Migrations
                     AccountId = table.Column<Guid>(type: "uniqueidentifier", nullable: false),
                     Name = table.Column<string>(type: "nvarchar(200)", maxLength: 200, nullable: false),
                     Ticker = table.Column<string>(type: "nvarchar(40)", maxLength: 40, nullable: true),
-                    Type = table.Column<string>(type: "nvarchar(32)", maxLength: 32, nullable: false),
-                    Notes = table.Column<string>(type: "nvarchar(2000)", maxLength: 2000, nullable: true),
+                    Type = table.Column<int>(type: "int", nullable: false),
                     CreatedUtc = table.Column<DateTime>(type: "datetime2", nullable: false)
                 },
                 constraints: table =>
@@ -92,7 +90,7 @@ namespace net_worth_app.Data.Migrations
                 });
 
             migrationBuilder.CreateTable(
-                name: "InstrumentBalanceSnapshots",
+                name: "InstrumentSnapshots",
                 columns: table => new
                 {
                     Id = table.Column<Guid>(type: "uniqueidentifier", nullable: false),
@@ -103,25 +101,20 @@ namespace net_worth_app.Data.Migrations
                 },
                 constraints: table =>
                 {
-                    table.PrimaryKey("PK_InstrumentBalanceSnapshots", x => x.Id);
+                    table.PrimaryKey("PK_InstrumentSnapshots", x => x.Id);
                     table.ForeignKey(
-                        name: "FK_InstrumentBalanceSnapshots_AccountSnapshots_AccountSnapshotId",
+                        name: "FK_InstrumentSnapshots_AccountSnapshots_AccountSnapshotId",
                         column: x => x.AccountSnapshotId,
                         principalTable: "AccountSnapshots",
                         principalColumn: "Id",
                         onDelete: ReferentialAction.Cascade);
                     table.ForeignKey(
-                        name: "FK_InstrumentBalanceSnapshots_Instruments_InstrumentId",
+                        name: "FK_InstrumentSnapshots_Instruments_InstrumentId",
                         column: x => x.InstrumentId,
                         principalTable: "Instruments",
                         principalColumn: "Id",
-                        onDelete: ReferentialAction.Restrict);
+                        onDelete: ReferentialAction.Cascade);
                 });
-
-            migrationBuilder.CreateIndex(
-                name: "IX_Accounts_UserId_Name",
-                table: "Accounts",
-                columns: new[] { "UserId", "Name" });
 
             migrationBuilder.CreateIndex(
                 name: "IX_Accounts_InstitutionId",
@@ -129,9 +122,9 @@ namespace net_worth_app.Data.Migrations
                 column: "InstitutionId");
 
             migrationBuilder.CreateIndex(
-                name: "IX_Institutions_Name",
-                table: "Institutions",
-                column: "Name",
+                name: "IX_Accounts_UserId_Name",
+                table: "Accounts",
+                columns: new[] { "UserId", "Name" },
                 unique: true);
 
             migrationBuilder.CreateIndex(
@@ -141,27 +134,34 @@ namespace net_worth_app.Data.Migrations
                 unique: true);
 
             migrationBuilder.CreateIndex(
-                name: "IX_InstrumentBalanceSnapshots_AccountSnapshotId_InstrumentId",
-                table: "InstrumentBalanceSnapshots",
-                columns: new[] { "AccountSnapshotId", "InstrumentId" },
+                name: "IX_Institutions_Name",
+                table: "Institutions",
+                column: "Name",
                 unique: true);
-
-            migrationBuilder.CreateIndex(
-                name: "IX_InstrumentBalanceSnapshots_InstrumentId",
-                table: "InstrumentBalanceSnapshots",
-                column: "InstrumentId");
 
             migrationBuilder.CreateIndex(
                 name: "IX_Instruments_AccountId_Name",
                 table: "Instruments",
-                columns: new[] { "AccountId", "Name" });
+                columns: new[] { "AccountId", "Name" },
+                unique: true);
+
+            migrationBuilder.CreateIndex(
+                name: "IX_InstrumentSnapshots_AccountSnapshotId_InstrumentId",
+                table: "InstrumentSnapshots",
+                columns: new[] { "AccountSnapshotId", "InstrumentId" },
+                unique: true);
+
+            migrationBuilder.CreateIndex(
+                name: "IX_InstrumentSnapshots_InstrumentId",
+                table: "InstrumentSnapshots",
+                column: "InstrumentId");
         }
 
         /// <inheritdoc />
         protected override void Down(MigrationBuilder migrationBuilder)
         {
             migrationBuilder.DropTable(
-                name: "InstrumentBalanceSnapshots");
+                name: "InstrumentSnapshots");
 
             migrationBuilder.DropTable(
                 name: "AccountSnapshots");

@@ -1,18 +1,23 @@
 using Microsoft.EntityFrameworkCore;
-using net_worth_app.Data.Models;
+using NetWorth.Data.Models;
 
-namespace net_worth_app.Data;
+namespace NetWorth.Data;
 
 public class NetWorthDbContext(DbContextOptions<NetWorthDbContext> options) : DbContext(options)
 {
-    public DbSet<Institution> Institutions => Set<Institution>();
     public DbSet<Account> Accounts => Set<Account>();
+
     public DbSet<AccountSnapshot> AccountSnapshots => Set<AccountSnapshot>();
+
+    public DbSet<Institution> Institutions => Set<Institution>();
+
     public DbSet<Instrument> Instruments => Set<Instrument>();
-    public DbSet<InstrumentBalanceSnapshot> InstrumentBalanceSnapshots => Set<InstrumentBalanceSnapshot>();
+
+    public DbSet<InstrumentSnapshot> InstrumentSnapshots => Set<InstrumentSnapshot>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
         base.OnModelCreating(modelBuilder);
     }
 }
+

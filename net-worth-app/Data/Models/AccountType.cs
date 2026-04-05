@@ -1,4 +1,4 @@
-namespace net_worth_app.Data.Models;
+namespace NetWorth.Data.Models;
 
 public enum AccountType
 {
@@ -10,3 +10,4 @@ public enum AccountType
     Loan = 6,
     Other = 7
 }
+
