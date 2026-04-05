@@ -1,0 +1,60 @@
+@page "/accounts"
+@attribute [Authorize]
+@inject IDbContextFactory<NetWorthDbContext> DbContextFactory
+@inject CurrentUserAccessor CurrentUserAccessor
+
+<PageTitle>Accounts</PageTitle>
+
+<h1>Accounts</h1>
+
+@if (_isLoading)
+{
+    <p>Loading accounts...</p>
+}
+else if (_accounts.Count == 0)
+{
+    <p>No accounts yet.</p>
+}
+else
+{
+    <table class="table table-striped">
+        <thead>
+            <tr>
+                <th>Name</th>
+                <th>Institution</th>
+                <th>Category</th>
+                <th>Type</th>
+            </tr>
+        </thead>
+        <tbody>
+            @foreach (var account in _accounts)
+            {
+                <tr>
+                    <td>@account.Name</td>
+                    <td>@account.Institution.Name</td>
+                    <td>@account.Category</td>
+                    <td>@account.Type</td>
+                </tr>
+            }
+        </tbody>
+    </table>
+}
+
+@code {
+    private readonly List<Account> _accounts = [];
+    private bool _isLoading = true;
+
+    protected override async Task OnInitializedAsync()
+    {
+        var userId = CurrentUserAccessor.GetRequiredUserId();
+        await using var dbContext = await DbContextFactory.CreateDbContextAsync();
+
+        _accounts.AddRange(await dbContext.Accounts
+            .Include(x => x.Institution)
+            .Where(x => x.UserId == userId)
+            .OrderBy(x => x.Name)
+            .ToListAsync());
+
+        _isLoading = false;
+    }
+}

@@ -1,0 +1,57 @@
+@inherits LayoutComponentBase
+
+<header>
+    <nav class="navbar navbar-expand-sm navbar-light bg-white border-bottom box-shadow mb-3">
+        <div class="container">
+            <a class="navbar-brand" href="">Net Worth</a>
+            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#mainNav" aria-controls="mainNav" aria-expanded="false" aria-label="Toggle navigation">
+                <span class="navbar-toggler-icon"></span>
+            </button>
+            <div id="mainNav" class="navbar-collapse collapse d-sm-inline-flex justify-content-between">
+                <ul class="navbar-nav flex-grow-1">
+                    <li class="nav-item">
+                        <NavLink class="nav-link text-dark" href="" Match="NavLinkMatch.All">Home</NavLink>
+                    </li>
+                    <li class="nav-item">
+                        <NavLink class="nav-link text-dark" href="accounts">Accounts</NavLink>
+                    </li>
+                    <li class="nav-item">
+                        <NavLink class="nav-link text-dark" href="instruments">Instruments</NavLink>
+                    </li>
+                    <li class="nav-item">
+                        <NavLink class="nav-link text-dark" href="snapshots">Snapshots</NavLink>
+                    </li>
+                    <li class="nav-item">
+                        <NavLink class="nav-link text-dark" href="net-worth">Net Worth</NavLink>
+                    </li>
+                    <li class="nav-item">
+                        <NavLink class="nav-link text-dark" href="account-history">Account History</NavLink>
+                    </li>
+                </ul>
+                <ul class="navbar-nav">
+                    <AuthorizeView>
+                        <Authorized>
+                            <li class="nav-item">
+                                <span class="navbar-text text-dark me-2">Hello @context.User.Identity?.Name!</span>
+                            </li>
+                            <li class="nav-item">
+                                <a class="nav-link text-dark" href="MicrosoftIdentity/Account/SignOut">Sign out</a>
+                            </li>
+                        </Authorized>
+                        <NotAuthorized>
+                            <li class="nav-item">
+                                <a class="nav-link text-dark" href="MicrosoftIdentity/Account/SignIn">Sign in</a>
+                            </li>
+                        </NotAuthorized>
+                    </AuthorizeView>
+                </ul>
+            </div>
+        </div>
+    </nav>
+</header>
+
+<div class="container">
+    <main role="main" class="pb-3">
+        @Body
+    </main>
+</div>

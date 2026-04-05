@@ -35,7 +35,7 @@ Recommended phased storage strategy:
 
 Why this is a good fit:
 - You already know SQL Server.
-- Relational model cleanly supports users, accounts, instruments, snapshots, and time-series queries.
+- Relational model cleanly supports user-scoped accounts, instruments, snapshots, and time-series queries.
 - Azure SQL operational path is straightforward.
 
 ## Proposed implementation approach
@@ -79,7 +79,7 @@ Build in vertical slices so value appears early:
 ## Data model (initial)
 - `Account`
   - `Id` (guid)
-  - `OwnerId` (string; user object id/sub)
+  - `UserId` (string; Entra claim id, `oid` with `sub` fallback; not a FK in v1)
   - `Name`
   - `Category` (enum: Asset or Liability)
   - `Type` (enum/string: Cash, Brokerage, Retirement, CreditCard, Mortgage, Loan, Other)
@@ -118,7 +118,8 @@ Build in vertical slices so value appears early:
   - accounts using instrument snapshots: sum linked instrument snapshot values,
   - accounts using account snapshots: use `AccountSnapshot.AccountBalance`.
 - All balances are stored as positive values; account `Category` determines plus/minus effect in net worth math.
-- Instrument ownership is derived through its parent `Account` (no separate `OwnerId` on `Instrument`).
+- Instrument ownership is derived through its parent `Account` (no separate `UserId` on `Instrument`).
+- Ownership model in v1 is external-identity based: `UserId` is claim-backed and scoped in queries, without a local `Users` table FK.
 
 ## Graphing options
 Primary recommendation: use Chart.js (or equivalent) from Blazor components via JS interop.  
@@ -135,6 +136,9 @@ Alternative: adopt a Blazor-native chart component library after initial MVP.
 - Snapshot precedence: **instrument snapshots are used when present for that account/date**.
 - Snapshot input rule: **block account snapshot if instrument snapshots exist for account/date (and vice versa)**.
 - Snapshot linkage: **instrument snapshots are linked to `AccountSnapshot` header**.
+- Ownership key: **use `UserId` (not `OwnerId`) sourced from authenticated claims (`oid`, fallback `sub`)**.
+- Ownership FK: **none in v1** (no local `Users` table yet).
+- Claim mapping definition: **`oid with sub fallback` means use `oid` first (Microsoft Entra object/user ID for the signed-in user). If `oid` is missing, use `sub`, where `sub` is the OpenID Connect "subject" claim (the token issuer's unique identifier for that user).**
 
 ## Todos
 1. Add Blazor Web App (Interactive Server) shell and navigation.

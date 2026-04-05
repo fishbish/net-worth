@@ -2,8 +2,12 @@ using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Authentication.OpenIdConnect;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc.Authorization;
+using Microsoft.EntityFrameworkCore;
 using Microsoft.Identity.Web;
 using Microsoft.Identity.Web.UI;
+using net_worth_app.Components;
+using net_worth_app.Data;
+using net_worth_app.Services;
 
 namespace net_worth_app
 {
@@ -22,6 +26,13 @@ namespace net_worth_app
                 // By default, all incoming requests will be authorized according to the default policy.
                 options.FallbackPolicy = options.DefaultPolicy;
             });
+            builder.Services.AddHttpContextAccessor();
+            builder.Services.AddDbContextFactory<NetWorthDbContext>(options =>
+                options.UseSqlServer(builder.Configuration.GetConnectionString("NetWorth")));
+            builder.Services.AddScoped<CurrentUserAccessor>();
+            builder.Services.AddCascadingAuthenticationState();
+            builder.Services.AddRazorComponents()
+                .AddInteractiveServerComponents();
             builder.Services.AddRazorPages()
                 .AddMicrosoftIdentityUI();
 
@@ -39,11 +50,15 @@ namespace net_worth_app
 
             app.UseRouting();
 
+            app.UseAuthentication();
             app.UseAuthorization();
+            app.UseAntiforgery();
 
             app.MapStaticAssets();
-            app.MapRazorPages()
-               .WithStaticAssets();
+            app.MapRazorComponents<App>()
+                .AddInteractiveServerRenderMode()
+                .WithStaticAssets();
+            app.MapRazorPages();
             app.MapControllers();
 
             app.Run();
