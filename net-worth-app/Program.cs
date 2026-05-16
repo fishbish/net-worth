@@ -27,9 +27,11 @@ namespace NetWorth
                 options.FallbackPolicy = options.DefaultPolicy;
             });
             builder.Services.AddHttpContextAccessor();
-            builder.Services.AddDbContextFactory<NetWorthDbContext>(options =>
+            builder.Services.AddDbContext<NetWorthDbContext>(options =>
                 options.UseSqlServer(builder.Configuration.GetConnectionString("NetWorth")));
             builder.Services.AddScoped<CurrentUserAccessor>();
+            builder.Services.AddScoped<AccountService>();
+            builder.Services.AddScoped<InstitutionService>();
             builder.Services.AddCascadingAuthenticationState();
             builder.Services.AddRazorComponents()
                 .AddInteractiveServerComponents();
@@ -65,4 +67,3 @@ namespace NetWorth
         }
     }
 }
-

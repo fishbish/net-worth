@@ -12,8 +12,8 @@ using NetWorth.Data;
 namespace NetWorth.Data.Migrations
 {
     [DbContext(typeof(NetWorthDbContext))]
-    [Migration("20260405110530_InitialNetWorthSchema")]
-    partial class InitialNetWorthSchema
+    [Migration("20260516114145_InitialMigration")]
+    partial class InitialMigration
     {
         /// <inheritdoc />
         protected override void BuildTargetModel(ModelBuilder modelBuilder)
@@ -27,7 +27,7 @@ namespace NetWorth.Data.Migrations
 
             modelBuilder.Entity("NetWorth.Data.Models.Account", b =>
                 {
-                    b.Property<Guid>("Id")
+                    b.Property<Guid>("AccountId")
                         .ValueGeneratedOnAdd()
                         .HasColumnType("uniqueidentifier");
 
@@ -53,7 +53,7 @@ namespace NetWorth.Data.Migrations
                         .HasMaxLength(200)
                         .HasColumnType("nvarchar(200)");
 
-                    b.HasKey("Id");
+                    b.HasKey("AccountId");
 
                     b.HasIndex("InstitutionId");
 
@@ -65,7 +65,7 @@ namespace NetWorth.Data.Migrations
 
             modelBuilder.Entity("NetWorth.Data.Models.AccountSnapshot", b =>
                 {
-                    b.Property<Guid>("Id")
+                    b.Property<Guid>("AccountSnapshotId")
                         .ValueGeneratedOnAdd()
                         .HasColumnType("uniqueidentifier");
 
@@ -81,7 +81,7 @@ namespace NetWorth.Data.Migrations
                     b.Property<DateOnly>("SnapshotDate")
                         .HasColumnType("date");
 
-                    b.HasKey("Id");
+                    b.HasKey("AccountSnapshotId");
 
                     b.HasIndex("AccountId", "SnapshotDate")
                         .IsUnique();
@@ -91,7 +91,7 @@ namespace NetWorth.Data.Migrations
 
             modelBuilder.Entity("NetWorth.Data.Models.Institution", b =>
                 {
-                    b.Property<Guid>("Id")
+                    b.Property<Guid>("InstitutionId")
                         .ValueGeneratedOnAdd()
                         .HasColumnType("uniqueidentifier");
 
@@ -100,7 +100,7 @@ namespace NetWorth.Data.Migrations
                         .HasMaxLength(200)
                         .HasColumnType("nvarchar(200)");
 
-                    b.HasKey("Id");
+                    b.HasKey("InstitutionId");
 
                     b.HasIndex("Name")
                         .IsUnique();
@@ -110,7 +110,7 @@ namespace NetWorth.Data.Migrations
 
             modelBuilder.Entity("NetWorth.Data.Models.Instrument", b =>
                 {
-                    b.Property<Guid>("Id")
+                    b.Property<Guid>("InstrumentId")
                         .ValueGeneratedOnAdd()
                         .HasColumnType("uniqueidentifier");
 
@@ -132,7 +132,7 @@ namespace NetWorth.Data.Migrations
                     b.Property<int>("Type")
                         .HasColumnType("int");
 
-                    b.HasKey("Id");
+                    b.HasKey("InstrumentId");
 
                     b.HasIndex("AccountId", "Name")
                         .IsUnique();
@@ -142,7 +142,7 @@ namespace NetWorth.Data.Migrations
 
             modelBuilder.Entity("NetWorth.Data.Models.InstrumentSnapshot", b =>
                 {
-                    b.Property<Guid>("Id")
+                    b.Property<Guid>("InstrumentSnapshotId")
                         .ValueGeneratedOnAdd()
                         .HasColumnType("uniqueidentifier");
 
@@ -158,7 +158,7 @@ namespace NetWorth.Data.Migrations
                     b.Property<Guid>("InstrumentId")
                         .HasColumnType("uniqueidentifier");
 
-                    b.HasKey("Id");
+                    b.HasKey("InstrumentSnapshotId");
 
                     b.HasIndex("InstrumentId");
 
@@ -173,7 +173,7 @@ namespace NetWorth.Data.Migrations
                     b.HasOne("NetWorth.Data.Models.Institution", "Institution")
                         .WithMany()
                         .HasForeignKey("InstitutionId")
-                        .OnDelete(DeleteBehavior.Cascade)
+                        .OnDelete(DeleteBehavior.NoAction)
                         .IsRequired();
 
                     b.Navigation("Institution");
@@ -184,7 +184,7 @@ namespace NetWorth.Data.Migrations
                     b.HasOne("NetWorth.Data.Models.Account", "Account")
                         .WithMany("Snapshots")
                         .HasForeignKey("AccountId")
-                        .OnDelete(DeleteBehavior.Cascade)
+                        .OnDelete(DeleteBehavior.NoAction)
                         .IsRequired();
 
                     b.Navigation("Account");
@@ -195,7 +195,7 @@ namespace NetWorth.Data.Migrations
                     b.HasOne("NetWorth.Data.Models.Account", "Account")
                         .WithMany("Instruments")
                         .HasForeignKey("AccountId")
-                        .OnDelete(DeleteBehavior.Cascade)
+                        .OnDelete(DeleteBehavior.NoAction)
                         .IsRequired();
 
                     b.Navigation("Account");
@@ -206,13 +206,13 @@ namespace NetWorth.Data.Migrations
                     b.HasOne("NetWorth.Data.Models.AccountSnapshot", "AccountSnapshot")
                         .WithMany("InstrumentSnapshots")
                         .HasForeignKey("AccountSnapshotId")
-                        .OnDelete(DeleteBehavior.Cascade)
+                        .OnDelete(DeleteBehavior.NoAction)
                         .IsRequired();
 
                     b.HasOne("NetWorth.Data.Models.Instrument", "Instrument")
                         .WithMany("Snapshots")
                         .HasForeignKey("InstrumentId")
-                        .OnDelete(DeleteBehavior.Cascade)
+                        .OnDelete(DeleteBehavior.NoAction)
                         .IsRequired();
 
                     b.Navigation("AccountSnapshot");

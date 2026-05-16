@@ -6,11 +6,13 @@ Goal: add the ability to capture dated snapshots of assets and liabilities, then
 Also include an optional level under account for underlying instruments/holdings.
 
 ## Current state analysis
-- Project is a single web project: `net-worth-app` targeting `.NET 10` (`net-worth-app.csproj`).
-- UI is still starter pages (`Index`, `Privacy`) with no business features.
-- Authentication is wired through Azure AD / Microsoft Identity (`Program.cs`, `appsettings.json`).
-- No EF Core, no database context, no entities, no migrations.
-- Layout/nav is simple and ready to extend (`Pages/Shared/_Layout.cshtml`).
+- Solution and workspace present (`net-worth.slnx`, `net-worth.code-workspace`) and main web project `net-worth-app` targeting .NET 10.
+- UI consists of starter pages (Index, Privacy) and a Blazor-ready layout (`Pages/Shared/_Layout.cshtml`).
+- Authentication scaffolded with Microsoft Identity / Azure AD (see `Program.cs`, `appsettings.json`).
+- No persistence: EF Core not added, no DbContext, no entities or migrations, and no database configured.
+- Domain features for net-worth tracking (accounts, snapshots, instruments) are not implemented.
+- No automated tests detected in repository snapshot.
+- NET_WORTH_HISTORY_PLAN.md and README provide design guidance; README is minimal.
 
 ## Technology choice assessment
 Blazor is a strong choice for this product and Azure hosting target.

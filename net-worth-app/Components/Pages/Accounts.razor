@@ -1,11 +1,78 @@
 @page "/accounts"
 @attribute [Authorize]
-@inject IDbContextFactory<NetWorthDbContext> DbContextFactory
-@inject CurrentUserAccessor CurrentUserAccessor
+@inject AccountService AccountService
+@inject InstitutionService InstitutionService
 
 <PageTitle>Accounts</PageTitle>
 
 <h1>Accounts</h1>
+
+@if (!string.IsNullOrWhiteSpace(_errorMessage))
+{
+    <div class="alert alert-danger" role="alert">@_errorMessage</div>
+}
+
+@if (!string.IsNullOrWhiteSpace(_successMessage))
+{
+    <div class="alert alert-success" role="alert">@_successMessage</div>
+}
+
+@if (_institutions.Count == 0)
+{
+    <div class="alert alert-warning" role="alert">
+        No institutions exist yet. Create institutions first, then add accounts.
+    </div>
+}
+
+<EditForm Model="_editModel" OnValidSubmit="SaveAsync" class="card p-3 mb-4">
+    <DataAnnotationsValidator />
+    <ValidationSummary />
+
+    <div class="row g-3">
+        <div class="col-md-6">
+            <label class="form-label" for="name">Name</label>
+            <InputText id="name" class="form-control" @bind-Value="_editModel.Name" />
+        </div>
+        <div class="col-md-6">
+            <label class="form-label" for="institution">Institution</label>
+            <InputSelect id="institution" class="form-select" @bind-Value="_editModel.InstitutionId">
+                <option value="@Guid.Empty">Select institution</option>
+                @foreach (var institution in _institutions)
+                {
+                    <option value="@institution.InstitutionId">@institution.Name</option>
+                }
+            </InputSelect>
+        </div>
+        <div class="col-md-6">
+            <label class="form-label" for="category">Category</label>
+            <InputSelect id="category" class="form-select" @bind-Value="_editModel.Category">
+                @foreach (var category in Enum.GetValues<AccountCategory>())
+                {
+                    <option value="@category">@category</option>
+                }
+            </InputSelect>
+        </div>
+        <div class="col-md-6">
+            <label class="form-label" for="type">Type</label>
+            <InputSelect id="type" class="form-select" @bind-Value="_editModel.Type">
+                @foreach (var type in Enum.GetValues<AccountType>())
+                {
+                    <option value="@type">@type</option>
+                }
+            </InputSelect>
+        </div>
+    </div>
+
+    <div class="mt-3 d-flex gap-2">
+        <button type="submit" class="btn btn-primary" disabled="@(_isSaving || _institutions.Count == 0)">
+            @(_isEditing ? "Update account" : "Create account")
+        </button>
+        @if (_isEditing)
+        {
+            <button type="button" class="btn btn-outline-secondary" @onclick="ResetForm">Cancel</button>
+        }
+    </div>
+</EditForm>
 
 @if (_isLoading)
 {
@@ -24,6 +91,7 @@ else
                 <th>Institution</th>
                 <th>Category</th>
                 <th>Type</th>
+                <th></th>
             </tr>
         </thead>
         <tbody>
@@ -31,9 +99,13 @@ else
             {
                 <tr>
                     <td>@account.Name</td>
-                    <td>@account.Institution.Name</td>
+                    <td>@account.InstitutionName</td>
                     <td>@account.Category</td>
                     <td>@account.Type</td>
+                    <td class="text-end">
+                        <button type="button" class="btn btn-sm btn-outline-primary me-2" @onclick="() => BeginEdit(account)">Edit</button>
+                        <button type="button" class="btn btn-sm btn-outline-danger" @onclick="() => DeleteAsync(account.AccountId)">Delete</button>
+                    </td>
                 </tr>
             }
         </tbody>
@@ -41,20 +113,105 @@ else
 }
 
 @code {
-    private readonly List<Account> _accounts = [];
+    private readonly List<AccountLookup> _accounts = [];
+    private readonly List<Institution> _institutions = [];
+    private AccountUpsert _editModel = new();
     private bool _isLoading = true;
+    private bool _isSaving;
+    private bool _isEditing;
+    private string? _errorMessage;
+    private string? _successMessage;
 
     protected override async Task OnInitializedAsync()
     {
-        var userId = CurrentUserAccessor.GetRequiredUserId();
-        await using var dbContext = await DbContextFactory.CreateDbContextAsync();
+        await LoadAsync();
+    }
 
-        _accounts.AddRange(await dbContext.Accounts
-            .Include(x => x.Institution)
-            .Where(x => x.UserId == userId)
-            .OrderBy(x => x.Name)
-            .ToListAsync());
+    private async Task LoadAsync()
+    {
+        _isLoading = true;
+        _errorMessage = null;
 
-        _isLoading = false;
+        try
+        {
+            _accounts.Clear();
+            _institutions.Clear();
+            _accounts.AddRange(await AccountService.GetAccountsAsync());
+            _institutions.AddRange(await InstitutionService.GetInstitutionsAsync());
+        }
+        finally
+        {
+            _isLoading = false;
+        }
+    }
+
+    private async Task SaveAsync()
+    {
+        _isSaving = true;
+        _errorMessage = null;
+        _successMessage = null;
+
+        try
+        {
+            await AccountService.SaveAsync(_editModel);
+            _successMessage = _isEditing ? "Account updated." : "Account created.";
+            await LoadAsync();
+            ResetForm();
+        }
+        catch (InvalidOperationException ex)
+        {
+            _errorMessage = ex.Message;
+        }
+        catch (DbUpdateException ex)
+        {
+            _errorMessage = ex.InnerException?.Message ?? ex.Message;
+        }
+        finally
+        {
+            _isSaving = false;
+        }
+    }
+
+    private void BeginEdit(AccountLookup account)
+    {
+        _isEditing = true;
+        _errorMessage = null;
+        _successMessage = null;
+        _editModel = new AccountUpsert
+        {
+            AccountId = account.AccountId,
+            Name = account.Name,
+            Category = account.Category,
+            Type = account.Type,
+            InstitutionId = account.InstitutionId
+        };
+    }
+
+    private async Task DeleteAsync(Guid accountId)
+    {
+        _errorMessage = null;
+        _successMessage = null;
+
+        try
+        {
+            await AccountService.DeleteAsync(accountId);
+            _successMessage = "Account deleted.";
+            await LoadAsync();
+            ResetForm();
+        }
+        catch (InvalidOperationException ex)
+        {
+            _errorMessage = ex.Message;
+        }
+        catch (DbUpdateException ex)
+        {
+            _errorMessage = ex.InnerException?.Message ?? ex.Message;
+        }
+    }
+
+    private void ResetForm()
+    {
+        _isEditing = false;
+        _editModel = new AccountUpsert();
     }
 }

@@ -1,0 +1,180 @@
+@page "/institutions"
+@attribute [Authorize]
+@inject InstitutionService InstitutionService
+
+<PageTitle>Institutions</PageTitle>
+
+<h1>Institutions</h1>
+
+@if (!string.IsNullOrWhiteSpace(_errorMessage))
+{
+    <div class="alert alert-danger" role="alert">@_errorMessage</div>
+}
+
+@if (!string.IsNullOrWhiteSpace(_successMessage))
+{
+    <div class="alert alert-success" role="alert">@_successMessage</div>
+}
+
+<EditForm Model="_newInstitution" OnValidSubmit="CreateAsync" class="card p-3 mb-4">
+    <DataAnnotationsValidator />
+    <ValidationSummary />
+
+    <div class="row g-3 align-items-end">
+        <div class="col-md-8">
+            <label class="form-label" for="newName">New institution name</label>
+            <InputText id="newName" class="form-control" @bind-Value="_newInstitution.Name" placeholder="e.g. Vanguard" />
+        </div>
+        <div class="col-md-4">
+            <button type="submit" class="btn btn-primary w-100" disabled="@_isSaving">Add institution</button>
+        </div>
+    </div>
+</EditForm>
+
+@if (_isLoading)
+{
+    <p>Loading institutions...</p>
+}
+else if (_institutions.Count == 0)
+{
+    <p>No institutions yet.</p>
+}
+else
+{
+    <EditForm Model="_institutions" OnValidSubmit="SaveAllAsync">
+        <table class="table table-striped align-middle">
+            <thead>
+                <tr>
+                    <th>Name</th>
+                    <th></th>
+                </tr>
+            </thead>
+            <tbody>
+                @foreach (var item in _institutions)
+                {
+                    <tr>
+                        <td>
+                            <InputText class="form-control form-control-sm" @bind-Value="item.Name" />
+                        </td>
+                        <td class="text-end text-nowrap">
+                            <button type="button" class="btn btn-sm btn-outline-danger"
+                                    @onclick="() => DeleteAsync(item.InstitutionId)" disabled="@_isSaving">
+                                Delete
+                            </button>
+                        </td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+
+        <button type="submit" class="btn btn-primary" disabled="@_isSaving">Save changes</button>
+    </EditForm>
+}
+
+@code {
+    private readonly List<Institution> _institutions = [];
+    private Institution _newInstitution = new();
+    private bool _isLoading = true;
+    private bool _isSaving;
+    private string? _errorMessage;
+    private string? _successMessage;
+
+    protected override async Task OnInitializedAsync()
+    {
+        await LoadAsync();
+    }
+
+    private async Task LoadAsync()
+    {
+        _isLoading = true;
+        _errorMessage = null;
+
+        try
+        {
+            _institutions.Clear();
+            _institutions.AddRange(await InstitutionService.GetInstitutionsAsync());
+        }
+        finally
+        {
+            _isLoading = false;
+        }
+    }
+
+    private async Task CreateAsync()
+    {
+        _isSaving = true;
+        _errorMessage = null;
+        _successMessage = null;
+
+        try
+        {
+            await InstitutionService.SaveAsync(_newInstitution);
+            _newInstitution = new Institution();
+            _successMessage = "Institution created.";
+            await LoadAsync();
+        }
+        catch (InvalidOperationException ex)
+        {
+            _errorMessage = ex.Message;
+        }
+        catch (DbUpdateException ex)
+        {
+            _errorMessage = ex.InnerException?.Message ?? ex.Message;
+        }
+        finally
+        {
+            _isSaving = false;
+        }
+    }
+
+    private async Task SaveAllAsync()
+    {
+        _isSaving = true;
+        _errorMessage = null;
+        _successMessage = null;
+
+        try
+        {
+            await InstitutionService.SaveAllAsync(_institutions);
+            _successMessage = "Institutions saved.";
+        }
+        catch (InvalidOperationException ex)
+        {
+            _errorMessage = ex.Message;
+        }
+        catch (DbUpdateException ex)
+        {
+            _errorMessage = ex.InnerException?.Message ?? ex.Message;
+        }
+        finally
+        {
+            _isSaving = false;
+        }
+    }
+
+    private async Task DeleteAsync(Guid institutionId)
+    {
+        _isSaving = true;
+        _errorMessage = null;
+        _successMessage = null;
+
+        try
+        {
+            await InstitutionService.DeleteAsync(institutionId);
+            _institutions.RemoveAll(x => x.InstitutionId == institutionId);
+            _successMessage = "Institution deleted.";
+        }
+        catch (InvalidOperationException ex)
+        {
+            _errorMessage = ex.Message;
+        }
+        catch (DbUpdateException ex)
+        {
+            _errorMessage = ex.InnerException?.Message ?? ex.Message;
+        }
+        finally
+        {
+            _isSaving = false;
+        }
+    }
+}

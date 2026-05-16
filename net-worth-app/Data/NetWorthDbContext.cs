@@ -1,5 +1,6 @@
 using Microsoft.EntityFrameworkCore;
 using NetWorth.Data.Models;
+using System.Linq;
 
 namespace NetWorth.Data;
 
@@ -18,6 +19,10 @@ public class NetWorthDbContext(DbContextOptions<NetWorthDbContext> options) : Db
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
         base.OnModelCreating(modelBuilder);
+
+        foreach (var foreignKey in modelBuilder.Model.GetEntityTypes().SelectMany(entity => entity.GetForeignKeys()))
+        {
+            foreignKey.DeleteBehavior = DeleteBehavior.NoAction;
+        }
     }
 }
-
