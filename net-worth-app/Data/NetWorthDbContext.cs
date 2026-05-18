@@ -24,5 +24,11 @@ public class NetWorthDbContext(DbContextOptions<NetWorthDbContext> options) : Db
         {
             foreignKey.DeleteBehavior = DeleteBehavior.NoAction;
         }
+
+        modelBuilder.Entity<Instrument>()
+            .HasOne(x => x.Account)
+            .WithMany(x => x.Instruments)
+            .HasForeignKey(x => x.AccountId)
+            .OnDelete(DeleteBehavior.Cascade);
     }
 }

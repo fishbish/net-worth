@@ -32,3 +32,14 @@ This file captures project conventions and decisions provided during implementat
 - In `Data/NetWorthDbContext.cs`, keep `DbSet` properties in alphabetical order.
 - Keep migration generation/application paused until explicitly requested.
 
+## Service and UI patterns
+
+- Treat catalogue-style entities (for example `Institution`) as simple CRUD:
+  - Use the EF entity type directly in service methods and UI binding.
+  - Keep UI editing simple (inline editable list + one Save action for the list).
+  - A bulk `SaveAllAsync` method is acceptable for small catalogue datasets.
+- Treat complex, user-owned entities (for example `Account`) with CQRS-style service models:
+  - Use separate read and write models (`Lookup` + `Upsert`) instead of binding EF entities directly.
+  - Scope all queries and writes to the current user (`UserId`).
+  - Validate required cross-entity references explicitly (for example `InstitutionId` must exist).
+  - Keep related catalogue creation out of complex aggregate save flows (do not create institutions inside account save).

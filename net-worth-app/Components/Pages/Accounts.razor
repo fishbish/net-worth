@@ -2,6 +2,7 @@
 @attribute [Authorize]
 @inject AccountService AccountService
 @inject InstitutionService InstitutionService
+@inject InstrumentService InstrumentService
 
 <PageTitle>Accounts</PageTitle>
 
@@ -102,7 +103,10 @@ else
                     <td>@account.InstitutionName</td>
                     <td>@account.Category</td>
                     <td>@account.Type</td>
-                    <td class="text-end">
+                    <td class="text-end text-nowrap">
+                        <button type="button" class="btn btn-sm btn-outline-secondary me-2" @onclick="() => ToggleInstrumentsAsync(account)">
+                            @(_selectedAccountId == account.AccountId ? "Hide instruments" : "Manage instruments")
+                        </button>
                         <button type="button" class="btn btn-sm btn-outline-primary me-2" @onclick="() => BeginEdit(account)">Edit</button>
                         <button type="button" class="btn btn-sm btn-outline-danger" @onclick="() => DeleteAsync(account.AccountId)">Delete</button>
                     </td>
@@ -112,13 +116,105 @@ else
     </table>
 }
 
+@if (_selectedAccountId.HasValue)
+{
+    <div class="card p-3">
+        <h4>Instruments for @_selectedAccountName</h4>
+
+        <EditForm Model="_instrumentEditModel" OnValidSubmit="SaveInstrumentAsync" class="mb-3">
+            <DataAnnotationsValidator />
+            <ValidationSummary />
+
+            <div class="row g-3">
+                <div class="col-md-4">
+                    <label class="form-label" for="instrumentName">Name</label>
+                    <InputText id="instrumentName" class="form-control" @bind-Value="_instrumentEditModel.Name" />
+                </div>
+                <div class="col-md-3">
+                    <label class="form-label" for="ticker">Ticker</label>
+                    <InputText id="ticker" class="form-control" @bind-Value="_instrumentEditModel.Ticker" />
+                </div>
+                <div class="col-md-3">
+                    <label class="form-label" for="instrumentType">Type</label>
+                    <InputSelect id="instrumentType" class="form-select" @bind-Value="_instrumentEditModel.Type">
+                        @foreach (var type in Enum.GetValues<InstrumentType>())
+                        {
+                            <option value="@type">@type</option>
+                        }
+                    </InputSelect>
+                </div>
+                <div class="col-md-2 d-flex align-items-end">
+                    <button type="submit" class="btn btn-primary w-100" disabled="@_isSavingInstrument">
+                        @(_isEditingInstrument ? "Update" : "Add")
+                    </button>
+                </div>
+            </div>
+
+            @if (_isEditingInstrument)
+            {
+                <div class="mt-2">
+                    <button type="button" class="btn btn-outline-secondary btn-sm" @onclick="ResetInstrumentForm">Cancel instrument edit</button>
+                </div>
+            }
+        </EditForm>
+
+        @if (_isLoadingInstruments)
+        {
+            <p>Loading instruments...</p>
+        }
+        else if (_instruments.Count == 0)
+        {
+            <p>No instruments for this account.</p>
+        }
+        else
+        {
+            <table class="table table-sm table-striped">
+                <thead>
+                    <tr>
+                        <th>Name</th>
+                        <th>Ticker</th>
+                        <th>Type</th>
+                        <th></th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach (var instrument in _instruments)
+                    {
+                        <tr>
+                            <td>@instrument.Name</td>
+                            <td>@(string.IsNullOrWhiteSpace(instrument.Ticker) ? "-" : instrument.Ticker)</td>
+                            <td>@instrument.Type</td>
+                            <td class="text-end text-nowrap">
+                                <button type="button" class="btn btn-sm btn-outline-primary me-2" @onclick="() => BeginInstrumentEdit(instrument)">Edit</button>
+                                <button type="button" class="btn btn-sm btn-outline-danger" @onclick="() => DeleteInstrumentAsync(instrument.InstrumentId)">Delete</button>
+                            </td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        }
+    </div>
+}
+
 @code {
     private readonly List<AccountLookup> _accounts = [];
     private readonly List<Institution> _institutions = [];
+    private readonly List<InstrumentLookup> _instruments = [];
+
     private AccountUpsert _editModel = new();
+    private InstrumentUpsert _instrumentEditModel = new();
+
+    private Guid? _selectedAccountId;
+    private string _selectedAccountName = string.Empty;
+
     private bool _isLoading = true;
     private bool _isSaving;
     private bool _isEditing;
+
+    private bool _isLoadingInstruments;
+    private bool _isSavingInstrument;
+    private bool _isEditingInstrument;
+
     private string? _errorMessage;
     private string? _successMessage;
 
@@ -172,6 +268,122 @@ else
         }
     }
 
+    private async Task ToggleInstrumentsAsync(AccountLookup account)
+    {
+        _errorMessage = null;
+        _successMessage = null;
+
+        if (_selectedAccountId == account.AccountId)
+        {
+            _selectedAccountId = null;
+            _selectedAccountName = string.Empty;
+            _instruments.Clear();
+            ResetInstrumentForm();
+            return;
+        }
+
+        _selectedAccountId = account.AccountId;
+        _selectedAccountName = account.Name;
+        ResetInstrumentForm();
+        await LoadInstrumentsAsync();
+    }
+
+    private async Task LoadInstrumentsAsync()
+    {
+        if (!_selectedAccountId.HasValue)
+        {
+            return;
+        }
+
+        _isLoadingInstruments = true;
+
+        try
+        {
+            _instruments.Clear();
+            _instruments.AddRange(await InstrumentService.GetByAccountAsync(_selectedAccountId.Value));
+        }
+        finally
+        {
+            _isLoadingInstruments = false;
+        }
+    }
+
+    private async Task SaveInstrumentAsync()
+    {
+        if (!_selectedAccountId.HasValue)
+        {
+            return;
+        }
+
+        _isSavingInstrument = true;
+        _errorMessage = null;
+        _successMessage = null;
+
+        try
+        {
+            await InstrumentService.SaveAsync(_selectedAccountId.Value, _instrumentEditModel);
+            _successMessage = _isEditingInstrument ? "Instrument updated." : "Instrument created.";
+            await LoadInstrumentsAsync();
+            ResetInstrumentForm();
+        }
+        catch (InvalidOperationException ex)
+        {
+            _errorMessage = ex.Message;
+        }
+        catch (DbUpdateException ex)
+        {
+            _errorMessage = ex.InnerException?.Message ?? ex.Message;
+        }
+        finally
+        {
+            _isSavingInstrument = false;
+        }
+    }
+
+    private void BeginInstrumentEdit(InstrumentLookup instrument)
+    {
+        _isEditingInstrument = true;
+        _instrumentEditModel = new InstrumentUpsert
+        {
+            InstrumentId = instrument.InstrumentId,
+            Name = instrument.Name,
+            Ticker = instrument.Ticker,
+            Type = instrument.Type
+        };
+    }
+
+    private async Task DeleteInstrumentAsync(Guid instrumentId)
+    {
+        if (!_selectedAccountId.HasValue)
+        {
+            return;
+        }
+
+        _isSavingInstrument = true;
+        _errorMessage = null;
+        _successMessage = null;
+
+        try
+        {
+            await InstrumentService.DeleteAsync(_selectedAccountId.Value, instrumentId);
+            _successMessage = "Instrument deleted.";
+            await LoadInstrumentsAsync();
+            ResetInstrumentForm();
+        }
+        catch (InvalidOperationException ex)
+        {
+            _errorMessage = ex.Message;
+        }
+        catch (DbUpdateException ex)
+        {
+            _errorMessage = ex.InnerException?.Message ?? ex.Message;
+        }
+        finally
+        {
+            _isSavingInstrument = false;
+        }
+    }
+
     private void BeginEdit(AccountLookup account)
     {
         _isEditing = true;
@@ -196,6 +408,15 @@ else
         {
             await AccountService.DeleteAsync(accountId);
             _successMessage = "Account deleted.";
+
+            if (_selectedAccountId == accountId)
+            {
+                _selectedAccountId = null;
+                _selectedAccountName = string.Empty;
+                _instruments.Clear();
+                ResetInstrumentForm();
+            }
+
             await LoadAsync();
             ResetForm();
         }
@@ -213,5 +434,11 @@ else
     {
         _isEditing = false;
         _editModel = new AccountUpsert();
+    }
+
+    private void ResetInstrumentForm()
+    {
+        _isEditingInstrument = false;
+        _instrumentEditModel = new InstrumentUpsert();
     }
 }

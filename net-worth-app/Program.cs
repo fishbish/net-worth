@@ -32,6 +32,7 @@ namespace NetWorth
             builder.Services.AddScoped<CurrentUserAccessor>();
             builder.Services.AddScoped<AccountService>();
             builder.Services.AddScoped<InstitutionService>();
+            builder.Services.AddScoped<InstrumentService>();
             builder.Services.AddCascadingAuthenticationState();
             builder.Services.AddRazorComponents()
                 .AddInteractiveServerComponents();
