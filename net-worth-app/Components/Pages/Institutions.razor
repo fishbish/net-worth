@@ -16,7 +16,7 @@
     <div class="alert alert-success" role="alert">@_successMessage</div>
 }
 
-<EditForm Model="_newInstitution" OnValidSubmit="CreateAsync" class="card p-3 mb-4">
+<EditForm Model="_newInstitution" OnValidSubmit="CreateAsync" FormName="create-institution" class="card p-3 mb-4">
     <DataAnnotationsValidator />
     <ValidationSummary />
 
@@ -41,7 +41,7 @@ else if (_institutions.Count == 0)
 }
 else
 {
-    <EditForm Model="_institutions" OnValidSubmit="SaveAllAsync">
+    <EditForm Model="_institutions" OnValidSubmit="SaveAllAsync" FormName="save-institutions">
         <table class="table table-striped align-middle">
             <thead>
                 <tr>

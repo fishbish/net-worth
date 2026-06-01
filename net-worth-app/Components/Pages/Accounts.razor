@@ -25,7 +25,7 @@
     </div>
 }
 
-<EditForm Model="_editModel" OnValidSubmit="SaveAsync" class="card p-3 mb-4">
+<EditForm Model="_editModel" OnValidSubmit="SaveAsync" FormName="save-account" class="card p-3 mb-4">
     <DataAnnotationsValidator />
     <ValidationSummary />
 
@@ -121,7 +121,7 @@ else
     <div class="card p-3">
         <h4>Instruments for @_selectedAccountName</h4>
 
-        <EditForm Model="_instrumentEditModel" OnValidSubmit="SaveInstrumentAsync" class="mb-3">
+        <EditForm Model="_instrumentEditModel" OnValidSubmit="SaveInstrumentAsync" FormName="save-instrument" class="mb-3">
             <DataAnnotationsValidator />
             <ValidationSummary />
 

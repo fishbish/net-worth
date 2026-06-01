@@ -12,7 +12,7 @@ public class CurrentUserAccessor(IHttpContextAccessor httpContextAccessor)
             throw new InvalidOperationException("Authenticated user is required.");
         }
 
-        var oid = user.FindFirstValue("oid");
+        var oid = user.FindFirstValue("http://schemas.microsoft.com/identity/claims/objectidentifier");
         if (!string.IsNullOrWhiteSpace(oid))
         {
             return oid;

@@ -1,0 +1,11 @@
+{
+  "configurations": [
+    {
+      "name": "C#: net-worth-app",
+      "type": "dotnet",
+      "request": "launch",
+      "projectPath": "${workspaceFolder}\\net-worth-app\\net-worth-app.csproj",
+      "launchConfigurationId": "TargetFramework=;https"
+    }
+  ]
+}

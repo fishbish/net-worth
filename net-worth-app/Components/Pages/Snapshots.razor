@@ -1,7 +1,162 @@
 @page "/snapshots"
 @attribute [Authorize]
+@inject SnapshotService SnapshotService
 
 <PageTitle>Snapshots</PageTitle>
 
 <h1>Snapshots</h1>
-<p>Snapshot capture workflow will be added in the next slice.</p>
+
+<div class="mb-3">
+    <p class="mb-1">Capture balances for a date. Leave fields blank to keep that account or instrument out of the snapshot.</p>
+    <p class="mb-0"><strong>Rule:</strong> use either account-level balance or instrument-level balances for the same account/date.</p>
+</div>
+
+@if (!string.IsNullOrWhiteSpace(_errorMessage))
+{
+    <div class="alert alert-danger" role="alert">@_errorMessage</div>
+}
+
+@if (!string.IsNullOrWhiteSpace(_successMessage))
+{
+    <div class="alert alert-success" role="alert">@_successMessage</div>
+}
+
+<div class="card mb-4">
+    <div class="card-body">
+        <div class="row g-3 align-items-end">
+            <div class="col-md-4">
+                <label class="form-label" for="snapshotDate">Snapshot date</label>
+                <InputDate id="snapshotDate" class="form-control" @bind-Value="_selectedDate" />
+            </div>
+            <div class="col-md-4">
+                <button class="btn btn-outline-secondary" @onclick="LoadForDateAsync" disabled="@(_isLoading || _isSaving)">
+                    @(_isLoading ? "Loading..." : "Load Date")
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+@if (_isLoading)
+{
+    <p>Loading snapshot editor...</p>
+}
+else if (_editor.Accounts.Count == 0)
+{
+    <p>Add accounts first, then return here to capture snapshots.</p>
+}
+else
+{
+    <EditForm Model="_editor" OnValidSubmit="SaveAsync" FormName="save-snapshot">
+        <DataAnnotationsValidator />
+        <ValidationSummary />
+
+        @foreach (var account in _editor.Accounts)
+        {
+            <div class="card mb-3">
+                <div class="card-body">
+                    <h5 class="card-title mb-3">@account.AccountName</h5>
+                    <p class="text-muted mb-3">@account.Category · @account.Type</p>
+
+                    <div class="row g-3">
+                        <div class="col-md-4">
+                            <label class="form-label">Account-level balance</label>
+                            <InputNumber class="form-control" @bind-Value="account.AccountBalance" />
+                        </div>
+                    </div>
+
+                    @if (account.Instruments.Count > 0)
+                    {
+                        <div class="mt-4">
+                            <h6>Instrument-level balances</h6>
+                            <div class="table-responsive">
+                                <table class="table table-sm align-middle">
+                                    <thead>
+                                        <tr>
+                                            <th scope="col">Instrument</th>
+                                            <th scope="col">Type</th>
+                                            <th scope="col" style="width: 240px;">Balance</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        @foreach (var instrument in account.Instruments)
+                                        {
+                                            <tr>
+                                                <td>@instrument.InstrumentName</td>
+                                                <td>@instrument.InstrumentType</td>
+                                                <td>
+                                                    <InputNumber class="form-control" @bind-Value="instrument.Balance" />
+                                                </td>
+                                            </tr>
+                                        }
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                    }
+                </div>
+            </div>
+        }
+
+        <button class="btn btn-primary" type="submit" disabled="@_isSaving">
+            @(_isSaving ? "Saving..." : "Save Snapshot")
+        </button>
+    </EditForm>
+}
+
+@code {
+    private SnapshotEditorModel _editor = new();
+    private DateOnly _selectedDate = DateOnly.FromDateTime(DateTime.Today);
+    private bool _isLoading;
+    private bool _isSaving;
+    private string? _successMessage;
+    private string? _errorMessage;
+
+    protected override async Task OnInitializedAsync()
+    {
+        await LoadForDateAsync();
+    }
+
+    private async Task LoadForDateAsync()
+    {
+        _isLoading = true;
+        _errorMessage = null;
+        _successMessage = null;
+
+        try
+        {
+            _editor = await SnapshotService.GetEditorAsync(_selectedDate);
+        }
+        catch (InvalidOperationException ex)
+        {
+            _errorMessage = ex.Message;
+        }
+        finally
+        {
+            _isLoading = false;
+        }
+    }
+
+    private async Task SaveAsync()
+    {
+        _isSaving = true;
+        _errorMessage = null;
+        _successMessage = null;
+
+        try
+        {
+            _editor.SnapshotDate = _selectedDate;
+            await SnapshotService.SaveAsync(_editor);
+            _successMessage = $"Snapshot saved for {_selectedDate:yyyy-MM-dd}.";
+            _editor = await SnapshotService.GetEditorAsync(_selectedDate);
+        }
+        catch (InvalidOperationException ex)
+        {
+            _errorMessage = ex.Message;
+        }
+        finally
+        {
+            _isSaving = false;
+        }
+    }
+}
