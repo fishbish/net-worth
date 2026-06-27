@@ -65,16 +65,14 @@ Build in vertical slices so value appears early:
    - Support **partial snapshots** (missing entities are treated as no entry for that date).
    - Enforce exclusivity per account/date: block account snapshot when instrument snapshots exist for that account/date, and block instrument snapshots when an account snapshot already exists.
 
-5. **Net worth history graph**
+5. **Unified history screen**
    - Query dated totals: `sum(asset balances) - sum(liability balances)` by date.
-   - Display in a line chart component with date range filter.
-
-6. **Per-account and per-instrument history graph**
-   - Account detail component charting account balance over time.
-   - If instruments exist, allow drill-down chart by instrument within the account.
+   - Display a default net worth line chart with a date range filter.
+   - Add an account selector to switch from total net worth history to per-account history on the same page.
+   - If instruments exist, allow drill-down charting by instrument within the selected account on the same page.
    - Optional grouped view by type (cash, investment, debt, etc.).
 
-7. **Azure readiness**
+6. **Azure readiness**
    - Move secrets/connection strings to user secrets and then Azure App Configuration/Key Vault or App Service settings.
    - Add deployment notes and migration execution steps for Azure.
 
@@ -148,11 +146,10 @@ Alternative: adopt a Blazor-native chart component library after initial MVP.
 3. Implement account entity/model and account CRUD components.
 4. Implement optional instrument entity/model and instrument CRUD under account.
 5. Implement dated snapshot entry/edit workflow with partial snapshots.
-6. Implement net worth history query and chart component.
-7. Implement per-account and per-instrument history chart components.
-8. Add auth-bound data ownership checks in all queries/commands.
-9. Enforce account/date snapshot exclusivity validation in application and persistence layers.
-10. Add Azure deployment and database configuration documentation updates.
+6. Implement a unified history page for net worth, per-account, and per-instrument charts.
+7. Add auth-bound data ownership checks in all queries/commands.
+8. Enforce account/date snapshot exclusivity validation in application and persistence layers.
+9. Add Azure deployment and database configuration documentation updates.
 
 ## Notes
 - Keep first release intentionally simple: single user profile data tied to logged-in identity, single currency, no account aggregation automation.

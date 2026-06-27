@@ -26,12 +26,7 @@
         <div class="row g-3 align-items-end">
             <div class="col-md-4">
                 <label class="form-label" for="snapshotDate">Snapshot date</label>
-                <InputDate id="snapshotDate" class="form-control" @bind-Value="_selectedDate" />
-            </div>
-            <div class="col-md-4">
-                <button class="btn btn-outline-secondary" @onclick="LoadForDateAsync" disabled="@(_isLoading || _isSaving)">
-                    @(_isLoading ? "Loading..." : "Load Date")
-                </button>
+                <InputDate id="snapshotDate" class="form-control" @bind-Value="_selectedDate" @bind-Value:after="LoadForDateAsync"/>
             </div>
         </div>
     </div>

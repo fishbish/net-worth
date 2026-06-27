@@ -1,0 +1,232 @@
+@page "/history"
+@attribute [Authorize]
+@inject HistoryService HistoryService
+
+<PageTitle>History</PageTitle>
+
+<h1>History</h1>
+<p class="text-muted">View total net worth over time or drill into a single account and its instruments.</p>
+
+@if (!string.IsNullOrWhiteSpace(_errorMessage))
+{
+    <div class="alert alert-danger" role="alert">@_errorMessage</div>
+}
+
+<div class="card p-3 mb-4">
+    <div class="row g-3 align-items-end">
+        <div class="col-md-3">
+            <label class="form-label" for="startDate">Start date</label>
+            <InputDate id="startDate" class="form-control" @bind-Value="_filters.StartDate" />
+        </div>
+        <div class="col-md-3">
+            <label class="form-label" for="endDate">End date</label>
+            <InputDate id="endDate" class="form-control" @bind-Value="_filters.EndDate" />
+        </div>
+        <div class="col-md-3">
+            <label class="form-label" for="accountFilter">Account</label>
+            <select id="accountFilter" class="form-select" value="@_filters.SelectedAccountId" @onchange="OnAccountChangedAsync">
+                <option value="">All accounts</option>
+                @foreach (var account in _page.Accounts)
+                {
+                    <option value="@account.AccountId">@account.DisplayName</option>
+                }
+            </select>
+        </div>
+        <div class="col-md-3 d-flex gap-2">
+            <button type="button" class="btn btn-primary" @onclick="LoadHistoryAsync" disabled="@_isLoading">Update history</button>
+            <button type="button" class="btn btn-outline-secondary" @onclick="ResetFiltersAsync" disabled="@_isLoading">Reset</button>
+        </div>
+    </div>
+
+    @if (_page.Instruments.Count > 0 && !string.IsNullOrWhiteSpace(_filters.SelectedAccountId))
+    {
+        <div class="row g-3 align-items-end mt-1">
+            <div class="col-md-3">
+                <label class="form-label" for="instrumentFilter">Instrument</label>
+                <select id="instrumentFilter" class="form-select" value="@_filters.SelectedInstrumentId" @onchange="OnInstrumentChangedAsync">
+                    <option value="">Account total</option>
+                    @foreach (var instrument in _page.Instruments)
+                    {
+                        <option value="@instrument.InstrumentId">@instrument.DisplayName</option>
+                    }
+                </select>
+            </div>
+        </div>
+    }
+</div>
+
+@if (_isLoading)
+{
+    <p>Loading history...</p>
+}
+else if (!_page.HasSnapshotData)
+{
+    <div class="alert alert-info" role="alert">
+        Capture some snapshots first, then return here to view history.
+    </div>
+}
+else
+{
+    <div class="mb-4">
+        <h2 class="h4 mb-1">@_page.Title</h2>
+        <p class="text-muted mb-0">@_page.Subtitle</p>
+    </div>
+
+    @if (_page.SelectedAccountCategory == AccountCategory.Liability && _page.SelectedAccountId.HasValue)
+    {
+        <div class="alert alert-secondary" role="alert">
+            Liability balances are shown as stored positive values here. The sign is only flipped when calculating total net worth.
+        </div>
+    }
+
+    @if (_page.Points.Count == 0)
+    {
+        <div class="alert alert-info" role="alert">
+            No history points match the current filters.
+        </div>
+    }
+    else
+    {
+        var latestPoint = _page.Points.Last();
+
+        <div class="row g-3 mb-4">
+            <div class="col-md-4">
+                <div class="card h-100">
+                    <div class="card-body">
+                        <div class="text-muted small">Latest value</div>
+                        <div class="fs-4">@latestPoint.Value.ToString("C2")</div>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-4">
+                <div class="card h-100">
+                    <div class="card-body">
+                        <div class="text-muted small">Latest date</div>
+                        <div class="fs-4">@latestPoint.Date.ToString("yyyy-MM-dd")</div>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-4">
+                <div class="card h-100">
+                    <div class="card-body">
+                        <div class="text-muted small">Data points</div>
+                        <div class="fs-4">@_page.Points.Count</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="card mb-4">
+            <div class="card-body">
+                <HistoryLineChart Points="_page.Points" SeriesLabel="_page.Title" />
+            </div>
+        </div>
+
+        <div class="card">
+            <div class="card-body">
+                <h3 class="h5">Values in range</h3>
+
+                <div class="table-responsive">
+                    <table class="table table-striped mb-0">
+                        <thead>
+                            <tr>
+                                <th>Date</th>
+                                <th class="text-end">Value</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            @foreach (var point in _page.Points.OrderByDescending(x => x.Date))
+                            {
+                                <tr>
+                                    <td>@point.Date.ToString("yyyy-MM-dd")</td>
+                                    <td class="text-end">@point.Value.ToString("C2")</td>
+                                </tr>
+                            }
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    }
+}
+
+@code {
+    private HistoryFilterModel _filters = new();
+    private HistoryPageData _page = new();
+    private bool _isLoading = true;
+    private string? _errorMessage;
+
+    protected override async Task OnInitializedAsync()
+    {
+        await LoadHistoryAsync();
+    }
+
+    private async Task LoadHistoryAsync()
+    {
+        _isLoading = true;
+        _errorMessage = null;
+
+        try
+        {
+            _page = await HistoryService.GetHistoryAsync(new HistoryRequest
+            {
+                StartDate = _filters.StartDate,
+                EndDate = _filters.EndDate,
+                AccountId = ParseGuid(_filters.SelectedAccountId),
+                InstrumentId = ParseGuid(_filters.SelectedInstrumentId)
+            });
+
+            SyncFiltersFromPage();
+        }
+        catch (InvalidOperationException ex)
+        {
+            _errorMessage = ex.Message;
+        }
+        finally
+        {
+            _isLoading = false;
+        }
+    }
+
+    private async Task OnAccountChangedAsync(ChangeEventArgs args)
+    {
+        _filters.SelectedAccountId = args.Value?.ToString() ?? string.Empty;
+        _filters.SelectedInstrumentId = string.Empty;
+        await LoadHistoryAsync();
+    }
+
+    private async Task OnInstrumentChangedAsync(ChangeEventArgs args)
+    {
+        _filters.SelectedInstrumentId = args.Value?.ToString() ?? string.Empty;
+        await LoadHistoryAsync();
+    }
+
+    private async Task ResetFiltersAsync()
+    {
+        _filters = new HistoryFilterModel();
+        await LoadHistoryAsync();
+    }
+
+    private void SyncFiltersFromPage()
+    {
+        _filters.StartDate = _page.StartDate;
+        _filters.EndDate = _page.EndDate;
+        _filters.SelectedAccountId = _page.SelectedAccountId?.ToString() ?? string.Empty;
+        _filters.SelectedInstrumentId = _page.SelectedInstrumentId?.ToString() ?? string.Empty;
+    }
+
+    private static Guid? ParseGuid(string value)
+    {
+        return Guid.TryParse(value, out var parsed)
+            ? parsed
+            : null;
+    }
+
+    private class HistoryFilterModel
+    {
+        public DateOnly? StartDate { get; set; }
+        public DateOnly? EndDate { get; set; }
+        public string SelectedAccountId { get; set; } = string.Empty;
+        public string SelectedInstrumentId { get; set; } = string.Empty;
+    }
+}

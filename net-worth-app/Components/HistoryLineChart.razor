@@ -1,0 +1,186 @@
+@if (Points.Count == 0)
+{
+    <div class="border rounded p-4 text-center text-muted">
+        No history data is available for this selection.
+    </div>
+}
+else
+{
+    var chart = BuildChart();
+
+    <div class="small text-muted d-flex justify-content-between mb-2">
+        <span>@chart.MaxLabel</span>
+        <span>@chart.MidLabel</span>
+        <span>@chart.MinLabel</span>
+    </div>
+
+    <svg viewBox="0 0 860 360" class="w-100" role="img" aria-label="@SeriesLabel">
+        <title>@SeriesLabel</title>
+
+        @foreach (var gridLine in chart.GridLines)
+        {
+            <line x1="@chart.PlotLeft" y1="@gridLine.Y" x2="@chart.PlotRight" y2="@gridLine.Y" stroke="#dee2e6" stroke-width="1" />
+        }
+
+        @if (chart.ZeroLineY.HasValue)
+        {
+            <line x1="@chart.PlotLeft" y1="@chart.ZeroLineY.Value" x2="@chart.PlotRight" y2="@chart.ZeroLineY.Value" stroke="#adb5bd" stroke-width="1.5" stroke-dasharray="4 4" />
+        }
+
+        <line x1="@chart.PlotLeft" y1="@chart.PlotBottom" x2="@chart.PlotRight" y2="@chart.PlotBottom" stroke="#adb5bd" stroke-width="1.5" />
+        <line x1="@chart.PlotLeft" y1="@chart.PlotTop" x2="@chart.PlotLeft" y2="@chart.PlotBottom" stroke="#adb5bd" stroke-width="1.5" />
+
+        <polyline fill="none" stroke="#0d6efd" stroke-width="3" points="@chart.PolylinePoints" stroke-linecap="round" stroke-linejoin="round" />
+
+        @foreach (var point in chart.Points)
+        {
+            <circle cx="@point.X" cy="@point.Y" r="4" fill="#0d6efd">
+                <title>@point.Tooltip</title>
+            </circle>
+        }
+    </svg>
+
+    <div class="small text-muted d-flex justify-content-between mt-2">
+        @foreach (var xAxisLabel in chart.XAxisLabels)
+        {
+            <span>@xAxisLabel.Label</span>
+        }
+    </div>
+}
+
+@code {
+    [Parameter]
+    public IReadOnlyList<HistoryPoint> Points { get; set; } = [];
+
+    [Parameter]
+    public string SeriesLabel { get; set; } = string.Empty;
+
+    private RenderedChart BuildChart()
+    {
+        const double chartWidth = 860d;
+        const double chartHeight = 360d;
+        const double plotLeft = 72d;
+        const double plotTop = 16d;
+        const double plotRight = chartWidth - 20d;
+        const double plotBottom = chartHeight - 44d;
+
+        var orderedPoints = Points.OrderBy(x => x.Date).ToList();
+
+        var minValue = orderedPoints.Min(x => x.Value);
+        var maxValue = orderedPoints.Max(x => x.Value);
+
+        if (minValue == maxValue)
+        {
+            var padding = Math.Max(Math.Abs((double)maxValue) * 0.1d, 1d);
+            minValue -= (decimal)padding;
+            maxValue += (decimal)padding;
+        }
+
+        var minDayNumber = orderedPoints.Min(x => x.Date.DayNumber);
+        var maxDayNumber = orderedPoints.Max(x => x.Date.DayNumber);
+        var totalDays = Math.Max(1, maxDayNumber - minDayNumber);
+        var valueRange = Math.Max(0.01d, (double)(maxValue - minValue));
+        var plotWidth = plotRight - plotLeft;
+        var plotHeight = plotBottom - plotTop;
+
+        var renderedPoints = orderedPoints
+            .Select(x =>
+            {
+                var xCoordinate = plotLeft + ((x.Date.DayNumber - minDayNumber) / (double)totalDays) * plotWidth;
+                var yCoordinate = plotTop + ((double)(maxValue - x.Value) / valueRange) * plotHeight;
+
+                return new RenderedPoint
+                {
+                    X = xCoordinate,
+                    Y = yCoordinate,
+                    Tooltip = $"{x.Date:yyyy-MM-dd}: {x.Value:C2}"
+                };
+            })
+            .ToList();
+
+        var polylinePoints = string.Join(" ", renderedPoints.Select(x => $"{x.X:0.##},{x.Y:0.##}"));
+        var midpointValue = minValue + ((maxValue - minValue) / 2m);
+
+        var gridLines = new List<GridLine>
+        {
+            new() { Y = plotTop, Label = maxValue.ToString("C2") },
+            new() { Y = plotTop + (plotHeight / 2d), Label = midpointValue.ToString("C2") },
+            new() { Y = plotBottom, Label = minValue.ToString("C2") }
+        };
+
+        var xAxisLabels = new List<XAxisLabel>
+        {
+            new() { Label = orderedPoints.First().Date.ToString("yyyy-MM-dd") }
+        };
+
+        if (orderedPoints.Count > 1)
+        {
+            var midpointDayNumber = minDayNumber + (totalDays / 2);
+            xAxisLabels.Add(new XAxisLabel
+            {
+                Label = DateOnly.FromDayNumber(midpointDayNumber).ToString("yyyy-MM-dd")
+            });
+
+            xAxisLabels.Add(new XAxisLabel
+            {
+                Label = orderedPoints.Last().Date.ToString("yyyy-MM-dd")
+            });
+        }
+
+        double? zeroLineY = null;
+        if (minValue < 0m && maxValue > 0m)
+        {
+            zeroLineY = plotTop + ((double)(maxValue / (maxValue - minValue))) * plotHeight;
+        }
+
+        return new RenderedChart
+        {
+            PlotLeft = plotLeft,
+            PlotTop = plotTop,
+            PlotRight = plotRight,
+            PlotBottom = plotBottom,
+            PolylinePoints = polylinePoints,
+            Points = renderedPoints,
+            GridLines = gridLines,
+            XAxisLabels = xAxisLabels,
+            MaxLabel = maxValue.ToString("C2"),
+            MidLabel = midpointValue.ToString("C2"),
+            MinLabel = minValue.ToString("C2"),
+            ZeroLineY = zeroLineY
+        };
+    }
+
+    private class RenderedChart
+    {
+        public double PlotLeft { get; set; }
+        public double PlotTop { get; set; }
+        public double PlotRight { get; set; }
+        public double PlotBottom { get; set; }
+        public string PolylinePoints { get; set; } = string.Empty;
+        public List<RenderedPoint> Points { get; set; } = [];
+        public List<GridLine> GridLines { get; set; } = [];
+        public List<XAxisLabel> XAxisLabels { get; set; } = [];
+        public string MaxLabel { get; set; } = string.Empty;
+        public string MidLabel { get; set; } = string.Empty;
+        public string MinLabel { get; set; } = string.Empty;
+        public double? ZeroLineY { get; set; }
+    }
+
+    private class RenderedPoint
+    {
+        public double X { get; set; }
+        public double Y { get; set; }
+        public string Tooltip { get; set; } = string.Empty;
+    }
+
+    private class GridLine
+    {
+        public double Y { get; set; }
+        public string Label { get; set; } = string.Empty;
+    }
+
+    private class XAxisLabel
+    {
+        public string Label { get; set; } = string.Empty;
+    }
+}
