@@ -93,7 +93,7 @@ public class HistoryService(NetWorthDbContext dbContext, CurrentUserAccessor cur
                     x.SnapshotDate <= endDate)
                 .OrderBy(x => x.SnapshotDate)
                 .ThenBy(x => x.Account.Name)
-                .Select(x => new HistorySnapshotRow
+                .Select(x => new HistoryAccountSnapshot
                 {
                     AccountId = x.AccountId,
                     SnapshotDate = x.SnapshotDate,
@@ -101,7 +101,7 @@ public class HistoryService(NetWorthDbContext dbContext, CurrentUserAccessor cur
                     AccountBalance = x.AccountBalance,
                     InstrumentSnapshots = x.InstrumentSnapshots
                         .OrderBy(i => i.Instrument.Name)
-                        .Select(i => new HistoryInstrumentSnapshotRow
+                        .Select(i => new HistoryInstrumentSnapshot
                         {
                             InstrumentId = i.InstrumentId,
                             Balance = i.Balance
@@ -113,8 +113,6 @@ public class HistoryService(NetWorthDbContext dbContext, CurrentUserAccessor cur
         return new HistoryPageData
         {
             HasSnapshotData = availableDateRange is not null,
-            MinAvailableDate = minAvailableDate,
-            MaxAvailableDate = maxAvailableDate,
             StartDate = startDate,
             EndDate = endDate,
             Accounts = accounts,
@@ -159,7 +157,7 @@ public class HistoryService(NetWorthDbContext dbContext, CurrentUserAccessor cur
     }
 
     private static List<HistoryPoint> BuildPoints(
-        List<HistorySnapshotRow> snapshots,
+        List<HistoryAccountSnapshot> snapshots,
         HistoryAccountOption? selectedAccount,
         HistoryInstrumentOption? selectedInstrument)
     {
@@ -212,7 +210,7 @@ public class HistoryService(NetWorthDbContext dbContext, CurrentUserAccessor cur
             .ToList();
     }
 
-    private static decimal? ResolveAccountValue(HistorySnapshotRow snapshot)
+    private static decimal? ResolveAccountValue(HistoryAccountSnapshot snapshot)
     {
         if (snapshot.InstrumentSnapshots.Count > 0)
         {
@@ -222,7 +220,7 @@ public class HistoryService(NetWorthDbContext dbContext, CurrentUserAccessor cur
         return snapshot.AccountBalance;
     }
 
-    private static decimal? ResolveSignedAccountValue(HistorySnapshotRow snapshot)
+    private static decimal? ResolveSignedAccountValue(HistoryAccountSnapshot snapshot)
     {
         var value = ResolveAccountValue(snapshot);
         if (!value.HasValue)
@@ -247,8 +245,6 @@ public class HistoryRequest
 public class HistoryPageData
 {
     public bool HasSnapshotData { get; set; }
-    public DateOnly MinAvailableDate { get; set; }
-    public DateOnly MaxAvailableDate { get; set; }
     public DateOnly StartDate { get; set; }
     public DateOnly EndDate { get; set; }
     public List<HistoryAccountOption> Accounts { get; set; } = [];
@@ -285,16 +281,16 @@ public class HistoryPoint
     public decimal Value { get; set; }
 }
 
-internal class HistorySnapshotRow
+internal class HistoryAccountSnapshot
 {
     public Guid AccountId { get; set; }
     public DateOnly SnapshotDate { get; set; }
     public AccountCategory AccountCategory { get; set; }
     public decimal? AccountBalance { get; set; }
-    public List<HistoryInstrumentSnapshotRow> InstrumentSnapshots { get; set; } = [];
+    public List<HistoryInstrumentSnapshot> InstrumentSnapshots { get; set; } = [];
 }
 
-internal class HistoryInstrumentSnapshotRow
+internal class HistoryInstrumentSnapshot
 {
     public Guid InstrumentId { get; set; }
     public decimal Balance { get; set; }
