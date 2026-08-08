@@ -3,14 +3,9 @@ using System.ComponentModel.DataAnnotations;
 
 namespace NetWorth.Data.Models;
 
-[Index(nameof(AccountId), nameof(Name), IsUnique = true)]
 public class Instrument
 {
     public Guid InstrumentId { get; set; }
-
-    public Guid AccountId { get; set; }
-
-    public Account Account { get; set; } = null!;
 
     [Required]
     [MaxLength(200)]
@@ -23,6 +18,5 @@ public class Instrument
 
     public DateTime CreatedUtc { get; set; }
 
-    public ICollection<InstrumentSnapshot> Snapshots { get; set; } = new List<InstrumentSnapshot>();
+    public ICollection<AccountInstrument> AccountInstruments { get; set; } = new List<AccountInstrument>();
 }
-

@@ -3,7 +3,7 @@ using System.ComponentModel.DataAnnotations.Schema;
 
 namespace NetWorth.Data.Models;
 
-[Index(nameof(AccountSnapshotId), nameof(InstrumentId), IsUnique = true)]
+[Index(nameof(AccountSnapshotId), nameof(AccountInstrumentId), IsUnique = true)]
 public class InstrumentSnapshot
 {
     public Guid InstrumentSnapshotId { get; set; }
@@ -12,13 +12,12 @@ public class InstrumentSnapshot
 
     public AccountSnapshot AccountSnapshot { get; set; } = null!;
 
-    public Guid InstrumentId { get; set; }
+    public Guid AccountInstrumentId { get; set; }
 
-    public Instrument Instrument { get; set; } = null!;
+    public AccountInstrument AccountInstrument { get; set; } = null!;
 
     [Column(TypeName = "decimal(18,2)")]
     public decimal Balance { get; set; }
 
     public DateTime CreatedUtc { get; set; }
 }
-

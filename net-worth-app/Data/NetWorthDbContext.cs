@@ -6,6 +6,8 @@ namespace NetWorth.Data;
 
 public class NetWorthDbContext(DbContextOptions<NetWorthDbContext> options) : DbContext(options)
 {
+    public DbSet<AccountInstrument> AccountInstruments => Set<AccountInstrument>();
+
     public DbSet<Account> Accounts => Set<Account>();
 
     public DbSet<AccountSnapshot> AccountSnapshots => Set<AccountSnapshot>();
@@ -25,10 +27,21 @@ public class NetWorthDbContext(DbContextOptions<NetWorthDbContext> options) : Db
             foreignKey.DeleteBehavior = DeleteBehavior.NoAction;
         }
 
-        modelBuilder.Entity<Instrument>()
-            .HasOne(x => x.Account)
-            .WithMany(x => x.Instruments)
-            .HasForeignKey(x => x.AccountId)
-            .OnDelete(DeleteBehavior.Cascade);
+        modelBuilder.Entity<AccountInstrument>(b =>
+        {
+            b.HasOne(x => x.Account)
+                .WithMany(x => x.AccountInstruments)
+                .HasForeignKey(x => x.AccountId)
+                .OnDelete(DeleteBehavior.Cascade);            
+        });
+
+        modelBuilder.Entity<Instrument>(b =>
+        {
+            b.HasIndex(x => x.Name)
+                .IsUnique();
+            b.HasIndex(x => x.Ticker)
+                .IsUnique()
+                .HasFilter("[Ticker] IS NOT NULL");
+        });
     }
 }

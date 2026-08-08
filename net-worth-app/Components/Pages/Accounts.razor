@@ -21,7 +21,7 @@
 @if (_institutions.Count == 0)
 {
     <div class="alert alert-warning" role="alert">
-        No institutions exist yet. Create institutions first, then add accounts.
+        No institutions exist yet. Create catalogue data first, then add accounts.
     </div>
 }
 
@@ -121,42 +121,79 @@ else
     <div class="card p-3">
         <h4>Instruments for @_selectedAccountName</h4>
 
-        <EditForm Model="_instrumentEditModel" OnValidSubmit="SaveInstrumentAsync" FormName="save-instrument" class="mb-3">
-            <DataAnnotationsValidator />
-            <ValidationSummary />
+        <div class="row g-4 mb-4">
+            <div class="col-lg-5">
+                <div class="border rounded p-3 h-100">
+                    <h5 class="h6">Link existing instrument</h5>
 
-            <div class="row g-3">
-                <div class="col-md-4">
-                    <label class="form-label" for="instrumentName">Name</label>
-                    <InputText id="instrumentName" class="form-control" @bind-Value="_instrumentEditModel.Name" />
-                </div>
-                <div class="col-md-3">
-                    <label class="form-label" for="ticker">Ticker</label>
-                    <InputText id="ticker" class="form-control" @bind-Value="_instrumentEditModel.Ticker" />
-                </div>
-                <div class="col-md-3">
-                    <label class="form-label" for="instrumentType">Type</label>
-                    <InputSelect id="instrumentType" class="form-select" @bind-Value="_instrumentEditModel.Type">
-                        @foreach (var type in Enum.GetValues<InstrumentType>())
-                        {
-                            <option value="@type">@type</option>
-                        }
-                    </InputSelect>
-                </div>
-                <div class="col-md-2 d-flex align-items-end">
-                    <button type="submit" class="btn btn-primary w-100" disabled="@_isSavingInstrument">
-                        @(_isEditingInstrument ? "Update" : "Add")
-                    </button>
+                    @if (_availableInstruments.Count == 0)
+                    {
+                        <p class="mb-0 text-muted">All catalogue instruments are already linked to this account.</p>
+                    }
+                    else
+                    {
+                        <EditForm Model="_linkInstrumentModel" OnValidSubmit="LinkInstrumentAsync" FormName="link-instrument">
+                            <div class="row g-3 align-items-end">
+                                <div class="col-12">
+                                    <label class="form-label" for="existingInstrument">Instrument</label>
+                                    <InputSelect id="existingInstrument" class="form-select" @bind-Value="_linkInstrumentModel.InstrumentId">
+                                        <option value="@Guid.Empty">Select instrument</option>
+                                        @foreach (var instrument in _availableInstruments)
+                                        {
+                                            <option value="@instrument.InstrumentId">@instrument.DisplayName</option>
+                                        }
+                                    </InputSelect>
+                                </div>
+                                <div class="col-12">
+                                    <button type="submit" class="btn btn-outline-primary" disabled="@_isSavingInstrument">Link instrument</button>
+                                </div>
+                            </div>
+                        </EditForm>
+                    }
                 </div>
             </div>
 
-            @if (_isEditingInstrument)
-            {
-                <div class="mt-2">
-                    <button type="button" class="btn btn-outline-secondary btn-sm" @onclick="ResetInstrumentForm">Cancel instrument edit</button>
+            <div class="col-lg-7">
+                <div class="border rounded p-3 h-100">
+                    <h5 class="h6">@(_isEditingInstrument ? "Edit instrument" : "Create and link new instrument")</h5>
+
+                    <EditForm Model="_instrumentEditModel" OnValidSubmit="SaveInstrumentAsync" FormName="save-instrument">
+                        <DataAnnotationsValidator />
+                        <ValidationSummary />
+
+                        <div class="row g-3">
+                            <div class="col-md-5">
+                                <label class="form-label" for="instrumentName">Name</label>
+                                <InputText id="instrumentName" class="form-control" @bind-Value="_instrumentEditModel.Name" />
+                            </div>
+                            <div class="col-md-3">
+                                <label class="form-label" for="ticker">Ticker</label>
+                                <InputText id="ticker" class="form-control" @bind-Value="_instrumentEditModel.Ticker" />
+                            </div>
+                            <div class="col-md-4">
+                                <label class="form-label" for="instrumentType">Type</label>
+                                <InputSelect id="instrumentType" class="form-select" @bind-Value="_instrumentEditModel.Type">
+                                    @foreach (var type in Enum.GetValues<InstrumentType>().OrderBy(x => x.ToString(), StringComparer.CurrentCulture))
+                                    {
+                                        <option value="@type">@type</option>
+                                    }
+                                </InputSelect>
+                            </div>
+                        </div>
+
+                        <div class="mt-3 d-flex gap-2">
+                            <button type="submit" class="btn btn-primary" disabled="@_isSavingInstrument">
+                                @(_isEditingInstrument ? "Update instrument" : "Create and link")
+                            </button>
+                            @if (_isEditingInstrument)
+                            {
+                                <button type="button" class="btn btn-outline-secondary" @onclick="ResetInstrumentForm">Cancel instrument edit</button>
+                            }
+                        </div>
+                    </EditForm>
                 </div>
-            }
-        </EditForm>
+            </div>
+        </div>
 
         @if (_isLoadingInstruments)
         {
@@ -186,7 +223,7 @@ else
                             <td>@instrument.Type</td>
                             <td class="text-end text-nowrap">
                                 <button type="button" class="btn btn-sm btn-outline-primary me-2" @onclick="() => BeginInstrumentEdit(instrument)">Edit</button>
-                                <button type="button" class="btn btn-sm btn-outline-danger" @onclick="() => DeleteInstrumentAsync(instrument.InstrumentId)">Delete</button>
+                                <button type="button" class="btn btn-sm btn-outline-danger" @onclick="() => UnlinkInstrumentAsync(instrument.InstrumentId)">Unlink</button>
                             </td>
                         </tr>
                     }
@@ -199,9 +236,11 @@ else
 @code {
     private readonly List<AccountLookup> _accounts = [];
     private readonly List<Institution> _institutions = [];
+    private readonly List<InstrumentLookup> _availableInstruments = [];
     private readonly List<InstrumentLookup> _instruments = [];
 
     private AccountUpsert _editModel = new();
+    private InstrumentLinkModel _linkInstrumentModel = new();
     private InstrumentUpsert _instrumentEditModel = new();
 
     private Guid? _selectedAccountId;
@@ -275,16 +314,14 @@ else
 
         if (_selectedAccountId == account.AccountId)
         {
-            _selectedAccountId = null;
-            _selectedAccountName = string.Empty;
-            _instruments.Clear();
-            ResetInstrumentForm();
+            ResetSelectedAccountInstruments();
             return;
         }
 
         _selectedAccountId = account.AccountId;
         _selectedAccountName = account.Name;
         ResetInstrumentForm();
+        _linkInstrumentModel = new InstrumentLinkModel();
         await LoadInstrumentsAsync();
     }
 
@@ -299,12 +336,53 @@ else
 
         try
         {
+            var linkedTask = InstrumentService.GetByAccountAsync(_selectedAccountId.Value);
+            var availableTask = InstrumentService.GetAvailableForAccountAsync(_selectedAccountId.Value);
+
+            await Task.WhenAll(linkedTask, availableTask);
+
             _instruments.Clear();
-            _instruments.AddRange(await InstrumentService.GetByAccountAsync(_selectedAccountId.Value));
+            _instruments.AddRange(linkedTask.Result);
+
+            _availableInstruments.Clear();
+            _availableInstruments.AddRange(availableTask.Result);
+
+            _linkInstrumentModel = new InstrumentLinkModel();
         }
         finally
         {
             _isLoadingInstruments = false;
+        }
+    }
+
+    private async Task LinkInstrumentAsync()
+    {
+        if (!_selectedAccountId.HasValue)
+        {
+            return;
+        }
+
+        _isSavingInstrument = true;
+        _errorMessage = null;
+        _successMessage = null;
+
+        try
+        {
+            await InstrumentService.LinkAsync(_selectedAccountId.Value, _linkInstrumentModel.InstrumentId);
+            _successMessage = "Instrument linked.";
+            await LoadInstrumentsAsync();
+        }
+        catch (InvalidOperationException ex)
+        {
+            _errorMessage = ex.Message;
+        }
+        catch (DbUpdateException ex)
+        {
+            _errorMessage = ex.InnerException?.Message ?? ex.Message;
+        }
+        finally
+        {
+            _isSavingInstrument = false;
         }
     }
 
@@ -322,7 +400,7 @@ else
         try
         {
             await InstrumentService.SaveAsync(_selectedAccountId.Value, _instrumentEditModel);
-            _successMessage = _isEditingInstrument ? "Instrument updated." : "Instrument created.";
+            _successMessage = _isEditingInstrument ? "Shared instrument updated." : "Instrument created and linked.";
             await LoadInstrumentsAsync();
             ResetInstrumentForm();
         }
@@ -352,7 +430,7 @@ else
         };
     }
 
-    private async Task DeleteInstrumentAsync(Guid instrumentId)
+    private async Task UnlinkInstrumentAsync(Guid instrumentId)
     {
         if (!_selectedAccountId.HasValue)
         {
@@ -365,8 +443,8 @@ else
 
         try
         {
-            await InstrumentService.DeleteAsync(_selectedAccountId.Value, instrumentId);
-            _successMessage = "Instrument deleted.";
+            await InstrumentService.UnlinkAsync(_selectedAccountId.Value, instrumentId);
+            _successMessage = "Instrument unlinked.";
             await LoadInstrumentsAsync();
             ResetInstrumentForm();
         }
@@ -411,10 +489,7 @@ else
 
             if (_selectedAccountId == accountId)
             {
-                _selectedAccountId = null;
-                _selectedAccountName = string.Empty;
-                _instruments.Clear();
-                ResetInstrumentForm();
+                ResetSelectedAccountInstruments();
             }
 
             await LoadAsync();
@@ -440,5 +515,20 @@ else
     {
         _isEditingInstrument = false;
         _instrumentEditModel = new InstrumentUpsert();
+    }
+
+    private void ResetSelectedAccountInstruments()
+    {
+        _selectedAccountId = null;
+        _selectedAccountName = string.Empty;
+        _availableInstruments.Clear();
+        _instruments.Clear();
+        _linkInstrumentModel = new InstrumentLinkModel();
+        ResetInstrumentForm();
+    }
+
+    private class InstrumentLinkModel
+    {
+        public Guid InstrumentId { get; set; }
     }
 }

@@ -57,16 +57,16 @@ public class HistoryService(NetWorthDbContext dbContext, CurrentUserAccessor cur
 
         var instruments = selectedAccount is null
             ? []
-            : await dbContext.Instruments
+            : await dbContext.AccountInstruments
                 .AsNoTracking()
                 .Where(x => x.AccountId == selectedAccount.AccountId)
-                .OrderBy(x => x.Name)
+                .OrderBy(x => x.Instrument.Name)
                 .Select(x => new HistoryInstrumentOption
                 {
                     InstrumentId = x.InstrumentId,
-                    Name = x.Name,
-                    Ticker = x.Ticker,
-                    Type = x.Type
+                    Name = x.Instrument.Name,
+                    Ticker = x.Instrument.Ticker,
+                    Type = x.Instrument.Type
                 })
                 .ToListAsync(cancellationToken);
 
@@ -100,10 +100,10 @@ public class HistoryService(NetWorthDbContext dbContext, CurrentUserAccessor cur
                     AccountCategory = x.Account.Category,
                     AccountBalance = x.AccountBalance,
                     InstrumentSnapshots = x.InstrumentSnapshots
-                        .OrderBy(i => i.Instrument.Name)
+                        .OrderBy(i => i.AccountInstrument.Instrument.Name)
                         .Select(i => new HistoryInstrumentSnapshot
                         {
-                            InstrumentId = i.InstrumentId,
+                            InstrumentId = i.AccountInstrument.InstrumentId,
                             Balance = i.Balance
                         })
                         .ToList()

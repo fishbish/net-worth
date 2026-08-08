@@ -1,10 +1,12 @@
+@page "/catalogue"
 @page "/institutions"
 @attribute [Authorize]
 @inject InstitutionService InstitutionService
+@inject InstrumentService InstrumentService
 
-<PageTitle>Institutions</PageTitle>
+<PageTitle>Catalogue</PageTitle>
 
-<h1>Institutions</h1>
+<h1>Catalogue</h1>
 
 @if (!string.IsNullOrWhiteSpace(_errorMessage))
 {
@@ -16,64 +18,166 @@
     <div class="alert alert-success" role="alert">@_successMessage</div>
 }
 
-<EditForm Model="_newInstitution" OnValidSubmit="CreateAsync" FormName="create-institution" class="card p-3 mb-4">
-    <DataAnnotationsValidator />
-    <ValidationSummary />
+<div class="row g-4">
+    <div class="col-xl-6">
+        <section class="card h-100">
+            <div class="card-body">
+                <h2 class="h4">Institutions</h2>
 
-    <div class="row g-3 align-items-end">
-        <div class="col-md-8">
-            <label class="form-label" for="newName">New institution name</label>
-            <InputText id="newName" class="form-control" @bind-Value="_newInstitution.Name" placeholder="e.g. Vanguard" />
-        </div>
-        <div class="col-md-4">
-            <button type="submit" class="btn btn-primary w-100" disabled="@_isSaving">Add institution</button>
-        </div>
-    </div>
-</EditForm>
+                <EditForm Model="_newInstitution" OnValidSubmit="CreateInstitutionAsync" FormName="create-institution" class="mb-4">
+                    <DataAnnotationsValidator />
+                    <ValidationSummary />
 
-@if (_isLoading)
-{
-    <p>Loading institutions...</p>
-}
-else if (_institutions.Count == 0)
-{
-    <p>No institutions yet.</p>
-}
-else
-{
-    <EditForm Model="_institutions" OnValidSubmit="SaveAllAsync" FormName="save-institutions">
-        <table class="table table-striped align-middle">
-            <thead>
-                <tr>
-                    <th>Name</th>
-                    <th></th>
-                </tr>
-            </thead>
-            <tbody>
-                @foreach (var item in _institutions)
+                    <div class="row g-3 align-items-end">
+                        <div class="col-md-8">
+                            <label class="form-label" for="newInstitutionName">New institution name</label>
+                            <InputText id="newInstitutionName" class="form-control" @bind-Value="_newInstitution.Name" placeholder="e.g. Vanguard" />
+                        </div>
+                        <div class="col-md-4">
+                            <button type="submit" class="btn btn-primary w-100" disabled="@_isSaving">Add institution</button>
+                        </div>
+                    </div>
+                </EditForm>
+
+                @if (_isLoading)
                 {
-                    <tr>
-                        <td>
-                            <InputText class="form-control form-control-sm" @bind-Value="item.Name" />
-                        </td>
-                        <td class="text-end text-nowrap">
-                            <button type="button" class="btn btn-sm btn-outline-danger"
-                                    @onclick="() => DeleteAsync(item.InstitutionId)" disabled="@_isSaving">
-                                Delete
-                            </button>
-                        </td>
-                    </tr>
+                    <p>Loading institutions...</p>
                 }
-            </tbody>
-        </table>
+                else if (_institutions.Count == 0)
+                {
+                    <p>No institutions yet.</p>
+                }
+                else
+                {
+                    <EditForm Model="_institutions" OnValidSubmit="SaveAllInstitutionsAsync" FormName="save-institutions">
+                        <table class="table table-striped align-middle">
+                            <thead>
+                                <tr>
+                                    <th>Name</th>
+                                    <th></th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                @foreach (var item in _institutions)
+                                {
+                                    <tr>
+                                        <td>
+                                            <InputText class="form-control form-control-sm" @bind-Value="item.Name" />
+                                        </td>
+                                        <td class="text-end text-nowrap">
+                                            <button type="button" class="btn btn-sm btn-outline-danger"
+                                                    @onclick="() => DeleteInstitutionAsync(item.InstitutionId)" disabled="@_isSaving">
+                                                Delete
+                                            </button>
+                                        </td>
+                                    </tr>
+                                }
+                            </tbody>
+                        </table>
 
-        <button type="submit" class="btn btn-primary" disabled="@_isSaving">Save changes</button>
-    </EditForm>
-}
+                        <button type="submit" class="btn btn-primary" disabled="@_isSaving">Save institutions</button>
+                    </EditForm>
+                }
+            </div>
+        </section>
+    </div>
+
+    <div class="col-xl-6">
+        <section class="card h-100">
+            <div class="card-body">
+                <h2 class="h4">Instruments</h2>
+
+                <EditForm Model="_newInstrument" OnValidSubmit="CreateInstrumentAsync" FormName="create-instrument" class="mb-4">
+                    <DataAnnotationsValidator />
+                    <ValidationSummary />
+
+                    <div class="row g-3 align-items-end">
+                        <div class="col-md-5">
+                            <label class="form-label" for="newInstrumentName">New instrument name</label>
+                            <InputText id="newInstrumentName" class="form-control" @bind-Value="_newInstrument.Name" />
+                        </div>
+                        <div class="col-md-3">
+                            <label class="form-label" for="newInstrumentTicker">Ticker</label>
+                            <InputText id="newInstrumentTicker" class="form-control" @bind-Value="_newInstrument.Ticker" />
+                        </div>
+                        <div class="col-md-2">
+                            <label class="form-label" for="newInstrumentType">Type</label>
+                            <InputSelect id="newInstrumentType" class="form-select" @bind-Value="_newInstrument.Type">
+                                @foreach (var type in Enum.GetValues<InstrumentType>().OrderBy(x => x.ToString(), StringComparer.CurrentCulture))
+                                {
+                                    <option value="@type">@type</option>
+                                }
+                            </InputSelect>
+                        </div>
+                        <div class="col-md-2">
+                            <button type="submit" class="btn btn-primary w-100" disabled="@_isSaving">Add</button>
+                        </div>
+                    </div>
+                </EditForm>
+
+                @if (_isLoading)
+                {
+                    <p>Loading instruments...</p>
+                }
+                else if (_instruments.Count == 0)
+                {
+                    <p>No instruments yet.</p>
+                }
+                else
+                {
+                    <EditForm Model="_instruments" OnValidSubmit="SaveAllInstrumentsAsync" FormName="save-instruments">
+                        <table class="table table-striped align-middle">
+                            <thead>
+                                <tr>
+                                    <th>Name</th>
+                                    <th>Ticker</th>
+                                    <th>Type</th>
+                                    <th></th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                @foreach (var item in _instruments)
+                                {
+                                    <tr>
+                                        <td>
+                                            <InputText class="form-control form-control-sm" @bind-Value="item.Name" />
+                                        </td>
+                                        <td>
+                                            <InputText class="form-control form-control-sm" @bind-Value="item.Ticker" />
+                                        </td>
+                                        <td>
+                                            <InputSelect class="form-select form-select-sm" @bind-Value="item.Type">
+                                                @foreach (var type in Enum.GetValues<InstrumentType>().OrderBy(x => x.ToString(), StringComparer.CurrentCulture))
+                                                {
+                                                    <option value="@type">@type</option>
+                                                }
+                                            </InputSelect>
+                                        </td>
+                                        <td class="text-end text-nowrap">
+                                            <button type="button" class="btn btn-sm btn-outline-danger"
+                                                    @onclick="() => DeleteInstrumentAsync(item.InstrumentId)" disabled="@_isSaving">
+                                                Delete
+                                            </button>
+                                        </td>
+                                    </tr>
+                                }
+                            </tbody>
+                        </table>
+
+                        <button type="submit" class="btn btn-primary" disabled="@_isSaving">Save instruments</button>
+                    </EditForm>
+                }
+            </div>
+        </section>
+    </div>
+</div>
 
 @code {
     private readonly List<Institution> _institutions = [];
+    private readonly List<Instrument> _instruments = [];
+
     private Institution _newInstitution = new();
+    private Instrument _newInstrument = CreateNewInstrument();
     private bool _isLoading = true;
     private bool _isSaving;
     private string? _errorMessage;
@@ -93,6 +197,9 @@ else
         {
             _institutions.Clear();
             _institutions.AddRange(await InstitutionService.GetInstitutionsAsync());
+
+            _instruments.Clear();
+            _instruments.AddRange(await InstrumentService.GetCatalogInstrumentsAsync());
         }
         finally
         {
@@ -100,7 +207,7 @@ else
         }
     }
 
-    private async Task CreateAsync()
+    private async Task CreateInstitutionAsync()
     {
         _isSaving = true;
         _errorMessage = null;
@@ -127,7 +234,7 @@ else
         }
     }
 
-    private async Task SaveAllAsync()
+    private async Task SaveAllInstitutionsAsync()
     {
         _isSaving = true;
         _errorMessage = null;
@@ -152,7 +259,7 @@ else
         }
     }
 
-    private async Task DeleteAsync(Guid institutionId)
+    private async Task DeleteInstitutionAsync(Guid institutionId)
     {
         _isSaving = true;
         _errorMessage = null;
@@ -176,5 +283,91 @@ else
         {
             _isSaving = false;
         }
+    }
+
+    private async Task CreateInstrumentAsync()
+    {
+        _isSaving = true;
+        _errorMessage = null;
+        _successMessage = null;
+
+        try
+        {
+            await InstrumentService.SaveAsync(_newInstrument);
+            _newInstrument = CreateNewInstrument();
+            _successMessage = "Instrument created.";
+            await LoadAsync();
+        }
+        catch (InvalidOperationException ex)
+        {
+            _errorMessage = ex.Message;
+        }
+        catch (DbUpdateException ex)
+        {
+            _errorMessage = ex.InnerException?.Message ?? ex.Message;
+        }
+        finally
+        {
+            _isSaving = false;
+        }
+    }
+
+    private async Task SaveAllInstrumentsAsync()
+    {
+        _isSaving = true;
+        _errorMessage = null;
+        _successMessage = null;
+
+        try
+        {
+            await InstrumentService.SaveAllAsync(_instruments);
+            _successMessage = "Instruments saved.";
+        }
+        catch (InvalidOperationException ex)
+        {
+            _errorMessage = ex.Message;
+        }
+        catch (DbUpdateException ex)
+        {
+            _errorMessage = ex.InnerException?.Message ?? ex.Message;
+        }
+        finally
+        {
+            _isSaving = false;
+        }
+    }
+
+    private async Task DeleteInstrumentAsync(Guid instrumentId)
+    {
+        _isSaving = true;
+        _errorMessage = null;
+        _successMessage = null;
+
+        try
+        {
+            await InstrumentService.DeleteAsync(instrumentId);
+            _instruments.RemoveAll(x => x.InstrumentId == instrumentId);
+            _successMessage = "Instrument deleted.";
+        }
+        catch (InvalidOperationException ex)
+        {
+            _errorMessage = ex.Message;
+        }
+        catch (DbUpdateException ex)
+        {
+            _errorMessage = ex.InnerException?.Message ?? ex.Message;
+        }
+        finally
+        {
+            _isSaving = false;
+        }
+    }
+
+    private static Instrument CreateNewInstrument()
+    {
+        return new Instrument
+        {
+            Type = InstrumentType.Stock
+        };
     }
 }

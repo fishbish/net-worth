@@ -20,13 +20,13 @@ public class SnapshotService(NetWorthDbContext dbContext, CurrentUserAccessor cu
                 AccountName = x.Name,
                 Category = x.Category,
                 Type = x.Type,
-                Instruments = x.Instruments
-                    .OrderBy(i => i.Name)
+                Instruments = x.AccountInstruments
+                    .OrderBy(i => i.Instrument.Name)
                     .Select(i => new SnapshotInstrumentEditor
                     {
-                        InstrumentId = i.InstrumentId,
-                        InstrumentName = i.Name,
-                        InstrumentType = i.Type
+                        AccountInstrumentId = i.AccountInstrumentId,
+                        InstrumentName = i.Instrument.Name,
+                        InstrumentType = i.Instrument.Type
                     })
                     .ToList()
             })
@@ -42,7 +42,7 @@ public class SnapshotService(NetWorthDbContext dbContext, CurrentUserAccessor cu
                 x.AccountId,
                 x.AccountBalance,
                 InstrumentBalances = x.InstrumentSnapshots
-                    .Select(i => new { i.InstrumentId, i.Balance })
+                    .Select(i => new { i.AccountInstrumentId, i.Balance })
                     .ToList()
             })
             .ToListAsync(cancellationToken);
@@ -58,10 +58,10 @@ public class SnapshotService(NetWorthDbContext dbContext, CurrentUserAccessor cu
 
             account.AccountBalance = accountSnapshot.AccountBalance;
 
-            var instrumentBalanceById = accountSnapshot.InstrumentBalances.ToDictionary(x => x.InstrumentId, x => x.Balance);
+            var instrumentBalanceById = accountSnapshot.InstrumentBalances.ToDictionary(x => x.AccountInstrumentId, x => x.Balance);
             foreach (var instrument in account.Instruments)
             {
-                if (instrumentBalanceById.TryGetValue(instrument.InstrumentId, out var balance))
+                if (instrumentBalanceById.TryGetValue(instrument.AccountInstrumentId, out var balance))
                 {
                     instrument.Balance = balance;
                 }
@@ -104,7 +104,7 @@ public class SnapshotService(NetWorthDbContext dbContext, CurrentUserAccessor cu
             .Select(x => new
             {
                 x.AccountId,
-                InstrumentIds = x.Instruments.Select(i => i.InstrumentId).ToHashSet()
+                AccountInstrumentIds = x.AccountInstruments.Select(i => i.AccountInstrumentId).ToHashSet()
             })
             .ToListAsync(cancellationToken);
 
@@ -128,7 +128,7 @@ public class SnapshotService(NetWorthDbContext dbContext, CurrentUserAccessor cu
             var requestedInstruments = requestedAccount.Instruments ?? [];
 
             var duplicateInstrument = requestedInstruments
-                .GroupBy(x => x.InstrumentId)
+                .GroupBy(x => x.AccountInstrumentId)
                 .FirstOrDefault(x => x.Key == Guid.Empty || x.Count() > 1);
             if (duplicateInstrument is not null)
             {
@@ -137,7 +137,7 @@ public class SnapshotService(NetWorthDbContext dbContext, CurrentUserAccessor cu
 
             foreach (var instrument in requestedInstruments)
             {
-                if (!accountOwnership.InstrumentIds.Contains(instrument.InstrumentId))
+                if (!accountOwnership.AccountInstrumentIds.Contains(instrument.AccountInstrumentId))
                 {
                     throw new InvalidOperationException($"Instrument '{instrument.InstrumentName}' does not belong to account '{requestedAccount.AccountName}'.");
                 }
@@ -186,17 +186,17 @@ public class SnapshotService(NetWorthDbContext dbContext, CurrentUserAccessor cu
                 var header = existingHeader ?? CreateAccountSnapshot(requestedAccount.AccountId, editor.SnapshotDate, headerByAccountId);
                 header.AccountBalance = null;
 
-                var existingInstrumentById = header.InstrumentSnapshots.ToDictionary(x => x.InstrumentId);
+                var existingInstrumentById = header.InstrumentSnapshots.ToDictionary(x => x.AccountInstrumentId);
                 foreach (var instrument in requestedInstruments)
                 {
                     if (instrument.Balance.HasValue)
                     {
-                        if (!existingInstrumentById.TryGetValue(instrument.InstrumentId, out var instrumentSnapshot))
+                        if (!existingInstrumentById.TryGetValue(instrument.AccountInstrumentId, out var instrumentSnapshot))
                         {
-                            instrumentSnapshot = new Data.Models.InstrumentSnapshot
+                            instrumentSnapshot = new InstrumentSnapshot
                             {
                                 AccountSnapshotId = header.AccountSnapshotId,
-                                InstrumentId = instrument.InstrumentId,
+                                AccountInstrumentId = instrument.AccountInstrumentId,
                                 CreatedUtc = DateTime.UtcNow
                             };
                             header.InstrumentSnapshots.Add(instrumentSnapshot);
@@ -204,7 +204,7 @@ public class SnapshotService(NetWorthDbContext dbContext, CurrentUserAccessor cu
 
                         instrumentSnapshot.Balance = instrument.Balance.Value;
                     }
-                    else if (existingInstrumentById.TryGetValue(instrument.InstrumentId, out var existingInstrument))
+                    else if (existingInstrumentById.TryGetValue(instrument.AccountInstrumentId, out var existingInstrument))
                     {
                         dbContext.InstrumentSnapshots.Remove(existingInstrument);
                     }
@@ -224,12 +224,12 @@ public class SnapshotService(NetWorthDbContext dbContext, CurrentUserAccessor cu
         await dbContext.SaveChangesAsync(cancellationToken);
     }
 
-    private Data.Models.AccountSnapshot CreateAccountSnapshot(
+    private AccountSnapshot CreateAccountSnapshot(
         Guid accountId,
         DateOnly snapshotDate,
-        Dictionary<Guid, Data.Models.AccountSnapshot> headerByAccountId)
+        Dictionary<Guid, AccountSnapshot> headerByAccountId)
     {
-        var snapshot = new Data.Models.AccountSnapshot
+        var snapshot = new AccountSnapshot
         {
             AccountId = accountId,
             SnapshotDate = snapshotDate,
@@ -260,7 +260,7 @@ public class SnapshotAccountEditor
 
 public class SnapshotInstrumentEditor
 {
-    public Guid InstrumentId { get; set; }
+    public Guid AccountInstrumentId { get; set; }
     public string InstrumentName { get; set; } = string.Empty;
     public InstrumentType InstrumentType { get; set; }
     public decimal? Balance { get; set; }
