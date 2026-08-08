@@ -16,7 +16,7 @@ public class NetWorthDbContext(DbContextOptions<NetWorthDbContext> options) : Db
 
     public DbSet<Instrument> Instruments => Set<Instrument>();
 
-    public DbSet<InstrumentSnapshot> InstrumentSnapshots => Set<InstrumentSnapshot>();
+    public DbSet<AccountInstrumentSnapshot> AccountInstrumentSnapshots => Set<AccountInstrumentSnapshot>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {

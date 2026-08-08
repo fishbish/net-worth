@@ -17,5 +17,5 @@ public class AccountInstrument
 
     public DateTime CreatedUtc { get; set; }
 
-    public ICollection<InstrumentSnapshot> Snapshots { get; set; } = new List<InstrumentSnapshot>();
+    public ICollection<AccountInstrumentSnapshot> Snapshots { get; set; } = new List<AccountInstrumentSnapshot>();
 }

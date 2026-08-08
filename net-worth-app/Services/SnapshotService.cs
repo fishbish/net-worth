@@ -193,7 +193,7 @@ public class SnapshotService(NetWorthDbContext dbContext, CurrentUserAccessor cu
                     {
                         if (!existingInstrumentById.TryGetValue(instrument.AccountInstrumentId, out var instrumentSnapshot))
                         {
-                            instrumentSnapshot = new InstrumentSnapshot
+                            instrumentSnapshot = new AccountInstrumentSnapshot
                             {
                                 AccountSnapshotId = header.AccountSnapshotId,
                                 AccountInstrumentId = instrument.AccountInstrumentId,
@@ -206,7 +206,7 @@ public class SnapshotService(NetWorthDbContext dbContext, CurrentUserAccessor cu
                     }
                     else if (existingInstrumentById.TryGetValue(instrument.AccountInstrumentId, out var existingInstrument))
                     {
-                        dbContext.InstrumentSnapshots.Remove(existingInstrument);
+                        dbContext.AccountInstrumentSnapshots.Remove(existingInstrument);
                     }
                 }
 
@@ -215,7 +215,7 @@ public class SnapshotService(NetWorthDbContext dbContext, CurrentUserAccessor cu
 
             if (existingHeader is not null)
             {
-                dbContext.InstrumentSnapshots.RemoveRange(existingHeader.InstrumentSnapshots);
+                dbContext.AccountInstrumentSnapshots.RemoveRange(existingHeader.InstrumentSnapshots);
                 dbContext.AccountSnapshots.Remove(existingHeader);
                 headerByAccountId.Remove(requestedAccount.AccountId);
             }

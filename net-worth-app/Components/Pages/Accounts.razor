@@ -336,16 +336,11 @@ else
 
         try
         {
-            var linkedTask = InstrumentService.GetByAccountAsync(_selectedAccountId.Value);
-            var availableTask = InstrumentService.GetAvailableForAccountAsync(_selectedAccountId.Value);
-
-            await Task.WhenAll(linkedTask, availableTask);
-
             _instruments.Clear();
-            _instruments.AddRange(linkedTask.Result);
+            _instruments.AddRange(await InstrumentService.GetByAccountAsync(_selectedAccountId.Value));
 
             _availableInstruments.Clear();
-            _availableInstruments.AddRange(availableTask.Result);
+            _availableInstruments.AddRange(await InstrumentService.GetAvailableForAccountAsync(_selectedAccountId.Value));
 
             _linkInstrumentModel = new InstrumentLinkModel();
         }

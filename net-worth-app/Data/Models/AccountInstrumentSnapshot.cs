@@ -4,9 +4,9 @@ using System.ComponentModel.DataAnnotations.Schema;
 namespace NetWorth.Data.Models;
 
 [Index(nameof(AccountSnapshotId), nameof(AccountInstrumentId), IsUnique = true)]
-public class InstrumentSnapshot
+public class AccountInstrumentSnapshot
 {
-    public Guid InstrumentSnapshotId { get; set; }
+    public Guid AccountInstrumentSnapshotId { get; set; }
 
     public Guid AccountSnapshotId { get; set; }
 
