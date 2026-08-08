@@ -6,6 +6,7 @@ public enum AccountType
     Brokerage = 2,
     Retirement = 3,
     Mortgage = 4,
-    Loan = 5
+    Loan = 5,
+    TaxFree = 6
 }
 

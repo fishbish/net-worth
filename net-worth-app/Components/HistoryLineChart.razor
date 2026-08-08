@@ -8,18 +8,13 @@ else
 {
     var chart = BuildChart();
 
-    <div class="small text-muted d-flex justify-content-between mb-2">
-        <span>@chart.MaxLabel</span>
-        <span>@chart.MidLabel</span>
-        <span>@chart.MinLabel</span>
-    </div>
-
     <svg viewBox="0 0 860 360" class="w-100" role="img" aria-label="@SeriesLabel">
         <title>@SeriesLabel</title>
 
         @foreach (var gridLine in chart.GridLines)
         {
             <line x1="@chart.PlotLeft" y1="@gridLine.Y" x2="@chart.PlotRight" y2="@gridLine.Y" stroke="#dee2e6" stroke-width="1" />
+            @((MarkupString)$"""<text x="{chart.PlotLeft - 8:0.##}" y="{gridLine.Y:0.##}" text-anchor="end" dominant-baseline="middle" fill="#6c757d" font-size="12">{System.Net.WebUtility.HtmlEncode(gridLine.Label)}</text>""")
         }
 
         @if (chart.ZeroLineY.HasValue)
@@ -143,9 +138,6 @@ else
             Points = renderedPoints,
             GridLines = gridLines,
             XAxisLabels = xAxisLabels,
-            MaxLabel = maxValue.ToString("C2"),
-            MidLabel = midpointValue.ToString("C2"),
-            MinLabel = minValue.ToString("C2"),
             ZeroLineY = zeroLineY
         };
     }
@@ -160,9 +152,6 @@ else
         public List<RenderedPoint> Points { get; set; } = [];
         public List<GridLine> GridLines { get; set; } = [];
         public List<XAxisLabel> XAxisLabels { get; set; } = [];
-        public string MaxLabel { get; set; } = string.Empty;
-        public string MidLabel { get; set; } = string.Empty;
-        public string MinLabel { get; set; } = string.Empty;
         public double? ZeroLineY { get; set; }
     }
 
